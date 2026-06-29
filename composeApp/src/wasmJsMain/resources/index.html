@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0A1828" />
+    <meta name="description" content="Qlodi CashPilot — double-entry accounting for SaaS founders. UA / EU / US." />
+    <title>Qlodi CashPilot</title>
+    <style>
+        html, body {
+            margin: 0; padding: 0; height: 100%;
+            background: #0A1828; color: #EAF2F8;
+            font-family: "Inter", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+            overflow: hidden;
+        }
+        canvas { display: block; outline: none; }
+        #loader {
+            position: fixed; inset: 0; z-index: 10;
+            display: flex; align-items: center; justify-content: center;
+            flex-direction: column; gap: 22px;
+            background: #0A1828; transition: opacity 0.4s ease;
+        }
+        #loader .title { font-size: 40px; font-weight: 700; color: #00FFFF; letter-spacing: -0.5px; }
+        #loader .sub { color: #647C92; font-size: 14px; margin-top: -12px; }
+        #loader .ring {
+            width: 28px; height: 28px; border-radius: 50%;
+            border: 2px solid rgba(0,255,255,0.20); border-top-color: #00FFFF;
+            animation: spin 0.9s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        body.loaded #loader { opacity: 0; pointer-events: none; }
+    </style>
+</head>
+<body>
+    <div id="loader">
+        <div class="title">Qlodi CashPilot</div>
+        <div class="sub">облік · UA / EU / US</div>
+        <div class="ring"></div>
+    </div>
+
+    <script src="composeApp.js"></script>
+    <script>
+        // Прибрати сплеш, коли Compose додасть свій canvas у body (перший кадр).
+        const obs = new MutationObserver(() => {
+            if (document.querySelector('canvas')) {
+                requestAnimationFrame(() => document.body.classList.add('loaded'));
+                obs.disconnect();
+            }
+        });
+        obs.observe(document.body, { childList: true, subtree: true });
+        setTimeout(() => document.body.classList.add('loaded'), 5000); // failsafe
+    </script>
+</body>
+</html>
