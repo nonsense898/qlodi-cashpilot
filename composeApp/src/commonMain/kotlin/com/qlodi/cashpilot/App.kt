@@ -149,7 +149,7 @@ private fun MobileShell(state: AppState) {
                 else ScreenContent(current, state, isCompact = true)
             }
         }
-        PillNavBar(Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp)) {
+        PillNavBar(Modifier.align(Alignment.BottomCenter).fillMaxWidth().navigationBarsPadding().padding(start = 20.dp, end = 20.dp, bottom = 8.dp)) {
             PrimaryTabs.forEach { (dest, icon) ->
                 PillNavItem(icon, dest.title.substringBefore(" "), active = !showMore && current == dest) {
                     current = dest; showMore = false

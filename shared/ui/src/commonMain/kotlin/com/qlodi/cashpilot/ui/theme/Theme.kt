@@ -31,6 +31,10 @@ object CashpilotColors {
     val danger = Color(0xFFFF6B6B)
 
     val accentDim = Color(0x2200FFFF)       // 13% cyan — активний фон таба
+
+    // Floating bottom nav (1:1 із frc-personal docked pill)
+    val tabBg = Color(0xC70D2137)           // surface @ ~0.78 alpha
+    val tabBorder = Color(0x0FFFFFFF)        // білий @ 0.06
 }
 
 val LocalCashpilotColors = staticCompositionLocalOf { CashpilotColors }

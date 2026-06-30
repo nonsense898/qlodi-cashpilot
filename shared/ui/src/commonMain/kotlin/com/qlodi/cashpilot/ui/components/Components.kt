@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -26,7 +27,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.qlodi.cashpilot.ui.theme.CashpilotColors
 import com.qlodi.cashpilot.ui.theme.NumberFontFamily
@@ -91,36 +94,43 @@ fun QBadge(text: String, color: Color = CashpilotColors.heroCyan) {
 fun PillNavBar(modifier: Modifier = Modifier, content: @Composable RowScope.() -> Unit) {
     val c = CashpilotColors
     val shape = RoundedCornerShape(999.dp)
-    Row(
+    Box(
         modifier
-            .fillMaxWidth()
-            .height(64.dp)
             .clip(shape)
-            .background(c.surface)
-            .border(BorderStroke(1.dp, c.border), shape)
-            .padding(horizontal = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceAround,
-        content = content,
-    )
+            .background(c.tabBg)
+            .border(BorderStroke(1.dp, c.tabBorder), shape)
+            .height(66.dp),
+    ) {
+        Row(
+            Modifier.fillMaxWidth().fillMaxHeight().padding(horizontal = 6.dp),
+            horizontalArrangement = Arrangement.spacedBy(2.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            content = content,
+        )
+    }
 }
 
 @Composable
 fun RowScope.PillNavItem(icon: ImageVector, label: String, active: Boolean, onClick: () -> Unit) {
     val c = CashpilotColors
     val shape = RoundedCornerShape(999.dp)
-    val fg = if (active) c.heroCyan else c.textMuted
+    val pillBg = if (active) c.heroCyan.copy(alpha = 0.16f) else Color.Transparent
+    val tint = if (active) c.heroCyan else c.textMuted
     Column(
         Modifier
             .weight(1f)
             .clip(shape)
-            .background(if (active) c.accentDim else Color.Transparent, shape)
+            .background(pillBg)
             .clickable(onClick = onClick)
-            .padding(vertical = 8.dp),
+            .padding(horizontal = 4.dp, vertical = 7.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(3.dp),
     ) {
-        Icon(icon, contentDescription = label, tint = fg, modifier = Modifier.size(20.dp))
-        Text(label, color = fg, fontSize = 10.5.sp, fontWeight = FontWeight.Medium)
+        Icon(icon, contentDescription = label, tint = tint, modifier = Modifier.size(20.dp))
+        Spacer(Modifier.height(2.dp))
+        Text(
+            label, color = tint,
+            style = TextStyle(fontSize = 10.sp, fontWeight = FontWeight.Medium, letterSpacing = 0.02.em),
+            maxLines = 1, overflow = TextOverflow.Ellipsis,
+        )
     }
 }
