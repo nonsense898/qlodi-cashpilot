@@ -31,26 +31,48 @@ import com.qlodi.cashpilot.ui.components.NumberText
 import com.qlodi.cashpilot.ui.components.QBadge
 import com.qlodi.cashpilot.ui.components.QCard
 import com.qlodi.cashpilot.ui.components.SectionTitle
+import com.qlodi.cashpilot.AppState
+import com.qlodi.cashpilot.data.api.AccountType
+import com.qlodi.cashpilot.data.api.Direction
+import com.qlodi.cashpilot.data.api.EntryStatus
 import com.qlodi.cashpilot.ui.nav.CashpilotDestination
 import com.qlodi.cashpilot.ui.theme.CashpilotColors
 import com.qlodi.cashpilot.ui.util.formatMoney
 
 /** Dashboard — гроші, P&L-знімок, runway, задачі періоду (бриф 5.1). Числа — мок. */
 @Composable
-fun DashboardScreen(isCompact: Boolean) {
+fun DashboardScreen(state: AppState, isCompact: Boolean) {
     val c = CashpilotColors
+    fun amt(s: String) = s.toDoubleOrNull() ?: 0.0
+    val posted = state.entries.filter { it.status == EntryStatus.POSTED }
+    val accType = state.accounts.associate { it.id to it.type }
+    val accSub = state.accounts.associate { it.id to it.subtype }
+    var revenue = 0.0; var expense = 0.0; var cash = 0.0
+    posted.forEach { e ->
+        e.lines.forEach { ln ->
+            val a = amt(ln.amountFunc); val dr = ln.direction == Direction.DEBIT
+            when (accType[ln.accountId]) {
+                AccountType.INCOME -> revenue += if (dr) -a else a
+                AccountType.EXPENSE -> expense += if (dr) a else -a
+                else -> {}
+            }
+            if (accSub[ln.accountId] in setOf("CASH", "BANK", "BANK_FX")) cash += if (dr) a else -a
+        }
+    }
+    val profit = revenue - expense
+
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            SectionTitle("Dashboard", "Огляд за червень 2026")
+            SectionTitle("Dashboard", state.entity?.name ?: "—")
             Spacer(Modifier.weight(1f))
-            QBadge("UA · UAH")
+            QBadge(state.entity?.let { "${it.jurisdiction} · ${it.functionalCurrency}" } ?: "—")
         }
 
         val kpis = listOf(
-            Quad("Кошти на рахунках", formatMoney(1_248_300.0, "UAH"), "+4.2%", c.positive),
-            Quad("Дохід (MTD)", formatMoney(420_000.0, "UAH"), "+12%", c.positive),
-            Quad("Чистий прибуток", formatMoney(96_500.0, "UAH"), "23% маржа", c.textSecondary),
-            Quad("Runway", "8.4 міс", "при поточному burn", c.warning),
+            Quad("Кошти на рахунках", formatMoney(cash, "UAH"), "${posted.size} проводок", c.textSecondary),
+            Quad("Дохід", formatMoney(revenue, "UAH"), "усього", c.positive),
+            Quad("Витрати", formatMoney(expense, "UAH"), "усього", c.danger),
+            Quad("Чистий прибуток", formatMoney(profit, "UAH"), if (profit >= 0) "прибуток" else "збиток", if (profit >= 0) c.positive else c.danger),
         )
         if (isCompact) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -66,13 +88,13 @@ fun DashboardScreen(isCompact: Boolean) {
             }
         }
 
-        // P&L mini + tasks
+        // P&L mini + стан
         if (isCompact) {
-            PnlCard(); TasksCard()
+            PnlCard(revenue, expense, profit); TasksCard(state)
         } else {
             Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                Box(Modifier.weight(1.2f)) { PnlCard() }
-                Box(Modifier.weight(1f)) { TasksCard() }
+                Box(Modifier.weight(1.2f)) { PnlCard(revenue, expense, profit) }
+                Box(Modifier.weight(1f)) { TasksCard(state) }
             }
         }
         Spacer(Modifier.height(40.dp))
@@ -94,15 +116,15 @@ private fun KpiCard(q: Quad, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun PnlCard() {
+private fun PnlCard(revenue: Double, expense: Double, profit: Double) {
     val c = CashpilotColors
     QCard(Modifier.fillMaxWidth()) {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("P&L знімок", color = c.textPrimary, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
-            PnlRow("Дохід", formatMoney(420_000.0, "UAH"), c.positive)
-            PnlRow("Витрати", formatMoney(323_500.0, "UAH"), c.danger)
+            PnlRow("Дохід", formatMoney(revenue, "UAH"), c.positive)
+            PnlRow("Витрати", formatMoney(expense, "UAH"), c.danger)
             Box(Modifier.fillMaxWidth().height(1.dp).background(c.border))
-            PnlRow("Чистий прибуток", formatMoney(96_500.0, "UAH"), c.textPrimary, bold = true)
+            PnlRow("Чистий прибуток", formatMoney(profit, "UAH"), if (profit >= 0) c.positive else c.danger, bold = true)
         }
     }
 }
@@ -119,14 +141,16 @@ private fun PnlRow(label: String, value: String, color: Color, bold: Boolean = f
 }
 
 @Composable
-private fun TasksCard() {
+private fun TasksCard(state: AppState) {
     val c = CashpilotColors
+    val tbOk = state.trialBalance?.balanced == true
+    val bsOk = state.balanceSheet?.balanced == true
     QCard(Modifier.fillMaxWidth()) {
         Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            Text("Задачі періоду", color = c.textPrimary, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
-            TaskRow(Icons.Filled.CalendarMonth, "Червень не закрито", "Trial balance збалансовано", c.warning)
-            TaskRow(Icons.Filled.SwapVert, "7 банк-транзакцій нерознесено", "Перейти до reconciliation", c.heroCyan)
-            TaskRow(Icons.Filled.Receipt, "2 прострочені інвойси", "${formatMoney(54_000.0, "UAH")} у простроченні", c.danger)
+            Text("Стан", color = c.textPrimary, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+            TaskRow(Icons.Filled.SwapVert, "${state.entries.size} проводок у журналі", "джерело істини", c.heroCyan)
+            TaskRow(Icons.Filled.CalendarMonth, if (tbOk) "Trial balance збалансовано" else "Перевір баланс", "Σ Дт = Σ Кт", if (tbOk) c.positive else c.warning)
+            TaskRow(Icons.Filled.Receipt, if (bsOk) "Баланс зведено" else "Баланс не зведено", "A = L + E", if (bsOk) c.positive else c.warning)
         }
     }
 }

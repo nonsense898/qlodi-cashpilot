@@ -73,7 +73,7 @@ fun App() = CashpilotTheme {
 
 @Composable
 private fun ScreenContent(dest: CashpilotDestination, state: AppState, isCompact: Boolean) = when (dest) {
-    CashpilotDestination.DASHBOARD -> DashboardScreen(isCompact)
+    CashpilotDestination.DASHBOARD -> DashboardScreen(state, isCompact)
     CashpilotDestination.CHART_OF_ACCOUNTS -> ChartOfAccountsScreen(state)
     CashpilotDestination.JOURNAL -> JournalScreen(state)
     CashpilotDestination.REPORTS -> ReportsScreen(state)
