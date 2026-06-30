@@ -1,37 +1,60 @@
 package com.qlodi.cashpilot.ui.theme
 
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontFamily
 
 /**
- * Бренд-токени Qlodi CashPilot — dark + cyan (узгоджено з Qlodi Business).
- * Джерело: «Бриф для Claude Design», розд. 3.
+ * Бренд-токени Qlodi CashPilot — dark navy + cyan.
+ * Узгоджено з референсним UI (standalone mockup) та дизайн-брифом (розд. 3).
  */
 object CashpilotColors {
-    val heroCyan = Color(0xFF00FFFF)   // акцент на темному, CTA, активні стани
-    val cyanDeep = Color(0xFF0B7C8C)   // акцент на світлих поверхнях, лінки
-    val navy = Color(0xFF0D2137)       // основний темний фон / заголовки
-    val background = Color(0xFF0A1828)
-    val surface = Color(0xFF0F2336)
-    val surfaceElevated = Color(0xFF16314A)
-    val border = Color(0xFF22384F)
+    val background = Color(0xFF06121F)      // найглибший фон
+    val surface = Color(0xFF0A1B2E)         // панелі / nav
+    val surfaceElevated = Color(0xFF0D2137) // картки
+    val border = Color(0xFF1C3A55)
 
-    val textPrimary = Color(0xFFEAF2F8)
-    val textSecondary = Color(0xFF9FB3C4)
-    val textMuted = Color(0xFF647C92)
+    val heroCyan = Color(0xFF00FFFF)        // CTA, активні стани
+    val cyanSoft = Color(0xFF9BEAF0)
+    val cyanDeep = Color(0xFF0B7C8C)        // лінки на світлому
+
+    val textPrimary = Color(0xFFE6F0F6)
+    val textSecondary = Color(0xFF8BA6BC)
+    val textMuted = Color(0xFF5E7C93)
     val onAccent = Color(0xFF012027)
 
-    // Семантика (як у P&L-інсайтах Business)
-    val positive = Color(0xFF3FD68B)
-    val warning = Color(0xFFF2B45C)
-    val danger = Color(0xFFF26D6D)
+    val positive = Color(0xFF3FD79A)
+    val warning = Color(0xFFF5B544)
+    val danger = Color(0xFFFF6B6B)
+
+    val accentDim = Color(0x2200FFFF)       // 13% cyan — активний фон таба
 }
 
 val LocalCashpilotColors = staticCompositionLocalOf { CashpilotColors }
 
+/** Compact (телефонна) ширина < 600dp — provided з кореня App. */
+val LocalIsCompact = staticCompositionLocalOf { false }
+
+/** Моноширинні цифри (фінансові дані вирівнюються по розряду) — проксі IBM Plex Mono. */
+val NumberFontFamily = FontFamily.Monospace
+
+private val CashpilotScheme = darkColorScheme(
+    primary = CashpilotColors.heroCyan,
+    onPrimary = CashpilotColors.onAccent,
+    background = CashpilotColors.background,
+    onBackground = CashpilotColors.textPrimary,
+    surface = CashpilotColors.surface,
+    onSurface = CashpilotColors.textPrimary,
+    surfaceVariant = CashpilotColors.surfaceElevated,
+    onSurfaceVariant = CashpilotColors.textSecondary,
+    error = CashpilotColors.danger,
+    outline = CashpilotColors.border,
+)
+
 @Composable
 fun CashpilotTheme(content: @Composable () -> Unit) {
-    // Скелет: проста обгортка. Material3-схема/типографіка додаються пізніше.
-    content()
+    MaterialTheme(colorScheme = CashpilotScheme, content = content)
 }
