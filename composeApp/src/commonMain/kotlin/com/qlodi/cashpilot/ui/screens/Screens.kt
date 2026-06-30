@@ -33,6 +33,7 @@ import com.qlodi.cashpilot.ui.components.QCard
 import com.qlodi.cashpilot.ui.components.SectionTitle
 import com.qlodi.cashpilot.ui.nav.CashpilotDestination
 import com.qlodi.cashpilot.ui.theme.CashpilotColors
+import com.qlodi.cashpilot.ui.util.formatMoney
 
 /** Dashboard — гроші, P&L-знімок, runway, задачі періоду (бриф 5.1). Числа — мок. */
 @Composable
@@ -46,9 +47,9 @@ fun DashboardScreen(isCompact: Boolean) {
         }
 
         val kpis = listOf(
-            Quad("Кошти на рахунках", "₴ 1 248 300", "+4.2%", c.positive),
-            Quad("Дохід (MTD)", "₴ 420 000", "+12%", c.positive),
-            Quad("Чистий прибуток", "₴ 96 500", "23% маржа", c.textSecondary),
+            Quad("Кошти на рахунках", formatMoney(1_248_300.0, "UAH"), "+4.2%", c.positive),
+            Quad("Дохід (MTD)", formatMoney(420_000.0, "UAH"), "+12%", c.positive),
+            Quad("Чистий прибуток", formatMoney(96_500.0, "UAH"), "23% маржа", c.textSecondary),
             Quad("Runway", "8.4 міс", "при поточному burn", c.warning),
         )
         if (isCompact) {
@@ -98,10 +99,10 @@ private fun PnlCard() {
     QCard(Modifier.fillMaxWidth()) {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("P&L знімок", color = c.textPrimary, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
-            PnlRow("Дохід", "₴ 420 000", c.positive)
-            PnlRow("Витрати", "₴ 323 500", c.danger)
+            PnlRow("Дохід", formatMoney(420_000.0, "UAH"), c.positive)
+            PnlRow("Витрати", formatMoney(323_500.0, "UAH"), c.danger)
             Box(Modifier.fillMaxWidth().height(1.dp).background(c.border))
-            PnlRow("Чистий прибуток", "₴ 96 500", c.textPrimary, bold = true)
+            PnlRow("Чистий прибуток", formatMoney(96_500.0, "UAH"), c.textPrimary, bold = true)
         }
     }
 }
@@ -125,7 +126,7 @@ private fun TasksCard() {
             Text("Задачі періоду", color = c.textPrimary, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
             TaskRow(Icons.Filled.CalendarMonth, "Червень не закрито", "Trial balance збалансовано", c.warning)
             TaskRow(Icons.Filled.SwapVert, "7 банк-транзакцій нерознесено", "Перейти до reconciliation", c.heroCyan)
-            TaskRow(Icons.Filled.Receipt, "2 прострочені інвойси", "₴ 54 000 у простроченні", c.danger)
+            TaskRow(Icons.Filled.Receipt, "2 прострочені інвойси", "${formatMoney(54_000.0, "UAH")} у простроченні", c.danger)
         }
     }
 }
