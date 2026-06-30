@@ -23,4 +23,5 @@ dependencyResolutionManagement {
 // Далі за патерном frc-business додаються :core:data та :features:* модулі.
 include(":composeApp")
 include(":core:domain")
+include(":core:data")
 include(":shared:ui")

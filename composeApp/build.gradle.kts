@@ -38,6 +38,7 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 implementation(project(":core:domain"))
+                implementation(project(":core:data"))
                 implementation(project(":shared:ui"))
                 implementation(compose.runtime)
                 implementation(compose.foundation)
