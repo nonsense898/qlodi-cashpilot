@@ -35,8 +35,10 @@ import com.qlodi.cashpilot.AppState
 import com.qlodi.cashpilot.data.api.AccountType
 import com.qlodi.cashpilot.data.api.Direction
 import com.qlodi.cashpilot.data.api.EntryStatus
+import androidx.compose.material.icons.filled.Settings
 import com.qlodi.cashpilot.ui.nav.CashpilotDestination
 import com.qlodi.cashpilot.ui.theme.CashpilotColors
+import com.qlodi.cashpilot.ui.theme.Spacing
 import com.qlodi.cashpilot.ui.util.formatMoney
 
 /** Dashboard — гроші, P&L-знімок, runway, задачі періоду (бриф 5.1). Числа — мок. */
@@ -171,15 +173,12 @@ private fun TaskRow(icon: ImageVector, title: String, sub: String, tint: Color) 
     }
 }
 
-/** Стилізований плейсхолдер для решти екранів. */
+/** Плейсхолдер екрана (Settings) — преміум empty-state. */
 @Composable
 fun PlaceholderScreen(dest: CashpilotDestination) {
-    val c = CashpilotColors
-    Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
-        SectionTitle(dest.title, "Скелет екрана — функціонал додається за ТЗ")
-        QCard(Modifier.fillMaxWidth(), padding = 24) {
-            Text(hintFor(dest), color = c.textSecondary, fontSize = 14.sp)
-        }
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.lg)) {
+        SectionTitle(dest.title, "Скоро")
+        com.qlodi.cashpilot.ui.components.EmptyState(Icons.Filled.Settings, dest.title, hintFor(dest))
     }
 }
 

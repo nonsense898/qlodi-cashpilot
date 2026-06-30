@@ -1,5 +1,10 @@
 package com.qlodi.cashpilot
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -28,6 +33,7 @@ import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -58,22 +64,35 @@ import com.qlodi.cashpilot.ui.screens.TaxesScreen
 import com.qlodi.cashpilot.ui.theme.CashpilotColors
 import com.qlodi.cashpilot.ui.theme.CashpilotTheme
 import com.qlodi.cashpilot.ui.theme.LocalIsCompact
+import com.qlodi.cashpilot.ui.theme.Motion
 
 @Composable
 fun App() = CashpilotTheme {
     val state = remember { AppState() }
     Box(Modifier.fillMaxSize().background(CashpilotColors.background)) {
-        if (!state.loggedIn) {
-            AuthScreen(state)
-        } else {
-            BoxWithConstraints(Modifier.fillMaxSize()) {
-                val compact = maxWidth < 600.dp
-                CompositionLocalProvider(LocalIsCompact provides compact) {
-                    if (compact) MobileShell(state) else DesktopShell(state)
+        Crossfade(targetState = state.loggedIn, animationSpec = Motion.emphasized(), label = "auth-gate") { loggedIn ->
+            if (!loggedIn) {
+                AuthScreen(state)
+            } else {
+                BoxWithConstraints(Modifier.fillMaxSize()) {
+                    val compact = maxWidth < 600.dp
+                    CompositionLocalProvider(LocalIsCompact provides compact) {
+                        if (compact) MobileShell(state) else DesktopShell(state)
+                    }
                 }
             }
         }
     }
+}
+
+/** Анімований контент екрана + top-progress на busy. */
+@Composable
+private fun AnimatedScreen(current: CashpilotDestination, state: AppState, isCompact: Boolean) {
+    AnimatedContent(
+        targetState = current,
+        transitionSpec = { fadeIn(Motion.fast()) togetherWith fadeOut(Motion.fast()) },
+        label = "screen",
+    ) { dest -> ScreenContent(dest, state, isCompact) }
 }
 
 @Composable
@@ -97,8 +116,14 @@ private fun DesktopShell(state: AppState) {
     var current by remember { mutableStateOf(CashpilotDestination.DASHBOARD) }
     Row(Modifier.fillMaxSize()) {
         NavRail(current, { current = it }, state)
-        Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(28.dp)) {
-            ScreenContent(current, state, isCompact = false)
+        Box(Modifier.fillMaxSize()) {
+            if (state.busy) LinearProgressIndicator(
+                Modifier.fillMaxWidth().align(Alignment.TopCenter),
+                color = CashpilotColors.heroCyan, trackColor = CashpilotColors.surface,
+            )
+            Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(28.dp)) {
+                AnimatedScreen(current, state, isCompact = false)
+            }
         }
     }
 }
@@ -153,10 +178,13 @@ private fun MobileShell(state: AppState) {
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize().statusBarsPadding()) {
             Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) { BrandHeader(state) }
+            if (state.busy) LinearProgressIndicator(
+                Modifier.fillMaxWidth(), color = CashpilotColors.heroCyan, trackColor = CashpilotColors.surface,
+            )
             Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState())
                 .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 110.dp)) {
                 if (showMore) MoreList(current, state) { current = it; showMore = false }
-                else ScreenContent(current, state, isCompact = true)
+                else AnimatedScreen(current, state, isCompact = true)
             }
         }
         PillNavBar(Modifier.align(Alignment.BottomCenter).fillMaxWidth().navigationBarsPadding().padding(start = 20.dp, end = 20.dp, bottom = 8.dp)) {
