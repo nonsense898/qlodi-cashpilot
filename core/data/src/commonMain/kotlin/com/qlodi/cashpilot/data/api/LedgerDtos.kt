@@ -8,6 +8,10 @@ enum class NormalBalance { DEBIT, CREDIT }
 enum class Direction { DEBIT, CREDIT }
 enum class EntrySource { MANUAL, AR, AP, BANK, PAYROLL, FX, CLOSING, REVERSAL, OPENING }
 enum class EntryStatus { POSTED, REVERSED }
+enum class PeriodStatus { OPEN, SOFT_CLOSED, LOCKED }
+
+@Serializable
+data class PeriodView(val id: String, val periodStart: String, val periodEnd: String, val status: PeriodStatus)
 
 @Serializable
 data class AuthCredentials(val email: String, val password: String, val name: String? = null)

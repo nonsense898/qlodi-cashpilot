@@ -54,6 +54,13 @@ class CashpilotApi(private val tokenProvider: TokenProvider = SessionStore) {
     suspend fun reverseEntry(eid: String, id: String): ApiResult<JournalEntryView> =
         apiCall { client.post(ApiConfig.url("/ledger/entities/$eid/journal-entries/$id/reverse")) }
 
+    /* ── Periods ── */
+    suspend fun listPeriods(eid: String): ApiResult<List<PeriodView>> =
+        apiCall { client.get(ApiConfig.url("/ledger/entities/$eid/periods")) }
+
+    suspend fun setPeriodStatus(eid: String, id: String, action: String): ApiResult<PeriodView> =
+        apiCall { client.post(ApiConfig.url("/ledger/entities/$eid/periods/$id/$action")) }
+
     /* ── Reports ── */
     suspend fun trialBalance(eid: String, asOf: String): ApiResult<TrialBalanceView> =
         apiCall { client.get(ApiConfig.url("/ledger/entities/$eid/reports/trial-balance")) { parameter("asOf", asOf) } }

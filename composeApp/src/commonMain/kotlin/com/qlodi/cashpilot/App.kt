@@ -45,11 +45,16 @@ import com.qlodi.cashpilot.ui.components.PillNavBar
 import com.qlodi.cashpilot.ui.components.PillNavItem
 import com.qlodi.cashpilot.ui.nav.CashpilotDestination
 import com.qlodi.cashpilot.ui.screens.AuthScreen
+import com.qlodi.cashpilot.ui.screens.BankingScreen
+import com.qlodi.cashpilot.ui.screens.BillsScreen
 import com.qlodi.cashpilot.ui.screens.ChartOfAccountsScreen
 import com.qlodi.cashpilot.ui.screens.DashboardScreen
+import com.qlodi.cashpilot.ui.screens.InvoicesScreen
 import com.qlodi.cashpilot.ui.screens.JournalScreen
+import com.qlodi.cashpilot.ui.screens.PeriodsScreen
 import com.qlodi.cashpilot.ui.screens.PlaceholderScreen
 import com.qlodi.cashpilot.ui.screens.ReportsScreen
+import com.qlodi.cashpilot.ui.screens.TaxesScreen
 import com.qlodi.cashpilot.ui.theme.CashpilotColors
 import com.qlodi.cashpilot.ui.theme.CashpilotTheme
 import com.qlodi.cashpilot.ui.theme.LocalIsCompact
@@ -76,8 +81,13 @@ private fun ScreenContent(dest: CashpilotDestination, state: AppState, isCompact
     CashpilotDestination.DASHBOARD -> DashboardScreen(state, isCompact)
     CashpilotDestination.CHART_OF_ACCOUNTS -> ChartOfAccountsScreen(state)
     CashpilotDestination.JOURNAL -> JournalScreen(state)
+    CashpilotDestination.BANKING -> BankingScreen(state)
+    CashpilotDestination.INVOICES -> InvoicesScreen(state)
+    CashpilotDestination.BILLS -> BillsScreen(state)
+    CashpilotDestination.TAXES -> TaxesScreen(state)
     CashpilotDestination.REPORTS -> ReportsScreen(state)
-    else -> PlaceholderScreen(dest)
+    CashpilotDestination.PERIODS -> PeriodsScreen(state)
+    CashpilotDestination.SETTINGS -> PlaceholderScreen(dest)
 }
 
 /* ───────────────── Desktop ───────────────── */

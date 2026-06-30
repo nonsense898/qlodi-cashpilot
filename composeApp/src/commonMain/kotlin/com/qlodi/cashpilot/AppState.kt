@@ -21,6 +21,7 @@ class AppState {
     var entries by mutableStateOf<List<JournalEntryView>>(emptyList()); private set
     var trialBalance by mutableStateOf<TrialBalanceView?>(null); private set
     var balanceSheet by mutableStateOf<BalanceSheetView?>(null); private set
+    var periods by mutableStateOf<List<PeriodView>>(emptyList()); private set
 
     /** asOf для звітів — «усе» (включає всі проводки). */
     private val asOf = "2100-12-31"
@@ -52,12 +53,13 @@ class AppState {
         val list = api.listEntities().getOrNull().orEmpty()
         val e = list.firstOrNull() ?: api.createEntity(CreateEntityRequest(name = "Моя компанія", jurisdiction = "UA")).getOrNull()
         entity = e
-        if (e != null) { reloadAccounts(); reloadEntries(); reloadReports() }
+        if (e != null) { reloadAccounts(); reloadEntries(); reloadReports(); reloadPeriods() }
         busy = false
     }
 
     suspend fun reloadAccounts() { entity?.let { accounts = api.listAccounts(it.id).getOrNull().orEmpty() } }
     suspend fun reloadEntries() { entity?.let { entries = api.listEntries(it.id).getOrNull().orEmpty() } }
+    suspend fun reloadPeriods() { entity?.let { periods = api.listPeriods(it.id).getOrNull().orEmpty() } }
     suspend fun reloadReports() {
         entity?.let {
             trialBalance = api.trialBalance(it.id, asOf).getOrNull()
@@ -65,11 +67,19 @@ class AppState {
         }
     }
 
+    suspend fun setPeriod(id: String, action: String) {
+        val eid = entity?.id ?: return
+        if (api.setPeriodStatus(eid, id, action) is ApiResult.Ok) reloadPeriods()
+    }
+
+    /** Перший активний рахунок із заданим subtype (для інвойсів/білів). */
+    fun accBySub(sub: String): AccountView? = accounts.firstOrNull { it.subtype == sub && it.isActive }
+
     /** Провести проводку. Повертає null при успіху, інакше — текст помилки. */
     suspend fun post(req: PostEntryRequest): String? {
         val eid = entity?.id ?: return "Немає entity"
         return when (val r = api.postEntry(eid, req)) {
-            is ApiResult.Ok -> { reloadEntries(); reloadReports(); null }
+            is ApiResult.Ok -> { reloadEntries(); reloadReports(); reloadPeriods(); null }
             is ApiResult.Err -> friendly(r.error)
         }
     }
