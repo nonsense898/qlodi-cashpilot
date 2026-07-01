@@ -4,6 +4,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ReceiptLong
@@ -84,7 +86,7 @@ fun ChartOfAccountsScreen(state: AppState) {
 /* ───────────── Journal ───────────── */
 
 @Composable
-fun JournalScreen(state: AppState) {
+fun JournalScreen(state: AppState, contentPadding: PaddingValues) {
     val c = CashpilotColors
     val S = LocalStrings.current
     val uk = LocalLanguage.current == AppLanguage.Ukrainian
@@ -92,57 +94,61 @@ fun JournalScreen(state: AppState) {
     var showEditor by remember { mutableStateOf(false) }
     var reverseTarget by remember { mutableStateOf<JournalEntryView?>(null) }
 
-    Column(verticalArrangement = Arrangement.spacedBy(Spacing.lg)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            SectionTitle(S.navJournal, "${state.entries.size} ${S.entriesWord}")
-            Spacer(Modifier.weight(1f))
-            if (showEditor) QTonalButton(S.close, { showEditor = false })
-            else QPrimaryButton(S.newEntry, { showEditor = true })
-        }
-
-        if (showEditor) NewEntryEditor(state) { showEditor = false }
-
-        if (state.entries.isEmpty() && !showEditor) {
-            if (state.busy) LoadingState() else EmptyState(Icons.AutoMirrored.Filled.ReceiptLong, S.journalEmpty, S.journalEmptySub)
-        }
-
-        state.entries.forEach { e ->
-            QCard(Modifier.fillMaxWidth()) {
-                Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(e.entryDate, color = c.textPrimary, style = MaterialTheme.typography.titleSmall)
-                        Spacer(Modifier.width(Spacing.sm))
-                        Text(e.description ?: "—", color = c.textSecondary, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
-                        if (e.status == EntryStatus.REVERSED) QBadge(S.reversedBadge, c.warning)
-                        else if (e.source == EntrySource.REVERSAL) QBadge(S.reversalBadge, c.textMuted)
-                    }
-                    e.lines.forEach { ln ->
-                        Row(Modifier.fillMaxWidth().padding(start = Spacing.xs), verticalAlignment = Alignment.CenterVertically) {
-                            Text(ln.accountCode, color = c.heroCyan, style = MaterialTheme.typography.labelMedium, modifier = Modifier.width(48.dp))
-                            Text(accountName(ln.accountCode, ln.accountName, uk), color = c.textSecondary, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
-                            val dr = ln.direction == Direction.DEBIT
-                            NumberText(money(ln.amountFunc), color = if (dr) c.textPrimary else c.textMuted, size = 12)
-                            Spacer(Modifier.width(Spacing.xs))
-                            Text(if (dr) S.dt else S.kt, color = c.textMuted, style = MaterialTheme.typography.labelSmall, modifier = Modifier.width(20.dp))
+    Box(Modifier.fillMaxSize()) {
+        LazyColumn(
+            Modifier.fillMaxSize(),
+            contentPadding = contentPadding,
+            verticalArrangement = Arrangement.spacedBy(Spacing.lg),
+        ) {
+            item("header") {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    SectionTitle(S.navJournal, "${state.entries.size} ${S.entriesWord}")
+                    Spacer(Modifier.weight(1f))
+                    if (showEditor) QTonalButton(S.close, { showEditor = false })
+                    else QPrimaryButton(S.newEntry, { showEditor = true })
+                }
+            }
+            if (showEditor) item("editor") { NewEntryEditor(state) { showEditor = false } }
+            if (state.entries.isEmpty() && !showEditor) item("empty") {
+                if (state.busy) LoadingState() else EmptyState(Icons.AutoMirrored.Filled.ReceiptLong, S.journalEmpty, S.journalEmptySub)
+            }
+            items(state.entries, key = { it.id }) { e ->
+                QCard(Modifier.fillMaxWidth()) {
+                    Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(e.entryDate, color = c.textPrimary, style = MaterialTheme.typography.titleSmall)
+                            Spacer(Modifier.width(Spacing.sm))
+                            Text(e.description ?: "—", color = c.textSecondary, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                            if (e.status == EntryStatus.REVERSED) QBadge(S.reversedBadge, c.warning)
+                            else if (e.source == EntrySource.REVERSAL) QBadge(S.reversalBadge, c.textMuted)
                         }
-                    }
-                    if (e.status == EntryStatus.POSTED && e.source != EntrySource.REVERSAL) {
-                        QTextLinkButton(S.reverseAction, { reverseTarget = e }, color = c.danger, leading = Icons.Filled.Undo)
+                        e.lines.forEach { ln ->
+                            Row(Modifier.fillMaxWidth().padding(start = Spacing.xs), verticalAlignment = Alignment.CenterVertically) {
+                                Text(ln.accountCode, color = c.heroCyan, style = MaterialTheme.typography.labelMedium, modifier = Modifier.width(48.dp))
+                                Text(accountName(ln.accountCode, ln.accountName, uk), color = c.textSecondary, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                                val dr = ln.direction == Direction.DEBIT
+                                NumberText(money(ln.amountFunc), color = if (dr) c.textPrimary else c.textMuted, size = 12)
+                                Spacer(Modifier.width(Spacing.xs))
+                                Text(if (dr) S.dt else S.kt, color = c.textMuted, style = MaterialTheme.typography.labelSmall, modifier = Modifier.width(20.dp))
+                            }
+                        }
+                        if (e.status == EntryStatus.POSTED && e.source != EntrySource.REVERSAL) {
+                            QTextLinkButton(S.reverseAction, { reverseTarget = e }, color = c.danger, leading = Icons.Filled.Undo)
+                        }
                     }
                 }
             }
         }
-        Spacer(Modifier.height(Spacing.huge))
-    }
 
-    reverseTarget?.let { e ->
-        ConfirmDialog(
-            title = S.reverseConfirmTitle,
-            message = S.reverseConfirmMsg,
-            confirmLabel = S.reverseConfirm, destructive = true,
-            onConfirm = { reverseTarget = null; scope.launch { state.reverse(e.id) } },
-            onDismiss = { reverseTarget = null },
-        )
+        reverseTarget?.let { e ->
+            ConfirmDialog(
+                title = S.reverseConfirmTitle,
+                message = S.reverseConfirmMsg,
+                confirmLabel = S.reverseConfirm, destructive = true,
+                onConfirm = { reverseTarget = null; scope.launch { state.reverse(e.id) } },
+                onDismiss = { reverseTarget = null },
+            )
+        }
     }
 }
 
@@ -236,8 +242,9 @@ private fun AccountPicker(accounts: List<AccountView>, selected: AccountView?, m
                     Text(S.pickAccount, color = c.textPrimary, style = MaterialTheme.typography.titleMedium)
                     QTextField(query, { query = it }, S.search,
                         trailingIcon = { Icon(Icons.Filled.Search, null, tint = c.textMuted) })
-                    Column(Modifier.heightIn(max = 360.dp).verticalScroll(rememberScrollState())) {
-                        accounts.filter { query.isBlank() || it.code.contains(query, true) || it.name.contains(query, true) || accountName(it.code, it.name, uk).contains(query, true) }.forEach { a ->
+                    val filtered = accounts.filter { query.isBlank() || it.code.contains(query, true) || it.name.contains(query, true) || accountName(it.code, it.name, uk).contains(query, true) }
+                    LazyColumn(Modifier.heightIn(max = 360.dp)) {
+                        items(filtered, key = { it.id }) { a ->
                             Row(
                                 Modifier.fillMaxWidth().clip(RoundedCornerShape(Radii.sm)).clickable { onPick(a); open = false }
                                     .padding(horizontal = Spacing.md, vertical = Spacing.md),

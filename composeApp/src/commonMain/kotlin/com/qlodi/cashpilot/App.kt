@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -107,17 +108,28 @@ private fun AnimatedScreen(current: CashpilotDestination, state: AppState, isCom
 }
 
 @Composable
-private fun ScreenContent(dest: CashpilotDestination, state: AppState, isCompact: Boolean) = when (dest) {
-    CashpilotDestination.DASHBOARD -> DashboardScreen(state, isCompact)
-    CashpilotDestination.CHART_OF_ACCOUNTS -> ChartOfAccountsScreen(state)
-    CashpilotDestination.JOURNAL -> JournalScreen(state)
-    CashpilotDestination.BANKING -> BankingScreen(state)
-    CashpilotDestination.INVOICES -> InvoicesScreen(state)
-    CashpilotDestination.BILLS -> BillsScreen(state)
-    CashpilotDestination.TAXES -> TaxesScreen(state)
-    CashpilotDestination.REPORTS -> ReportsScreen(state)
-    CashpilotDestination.PERIODS -> PeriodsScreen(state)
-    CashpilotDestination.SETTINGS -> SettingsScreen(state)
+private fun ScreenContent(dest: CashpilotDestination, state: AppState, isCompact: Boolean) {
+    val pad = if (isCompact) PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 110.dp)
+    else PaddingValues(28.dp)
+    when (dest) {
+        // Journal — self-scrolling LazyColumn (безмежний список проводок, key=id).
+        CashpilotDestination.JOURNAL -> JournalScreen(state, pad)
+        CashpilotDestination.DASHBOARD -> Scrolled(pad) { DashboardScreen(state, isCompact) }
+        CashpilotDestination.CHART_OF_ACCOUNTS -> Scrolled(pad) { ChartOfAccountsScreen(state) }
+        CashpilotDestination.BANKING -> Scrolled(pad) { BankingScreen(state) }
+        CashpilotDestination.INVOICES -> Scrolled(pad) { InvoicesScreen(state) }
+        CashpilotDestination.BILLS -> Scrolled(pad) { BillsScreen(state) }
+        CashpilotDestination.TAXES -> Scrolled(pad) { TaxesScreen(state) }
+        CashpilotDestination.REPORTS -> Scrolled(pad) { ReportsScreen(state) }
+        CashpilotDestination.PERIODS -> Scrolled(pad) { PeriodsScreen(state) }
+        CashpilotDestination.SETTINGS -> Scrolled(pad) { SettingsScreen(state) }
+    }
+}
+
+/** Скрол-обгортка для екранів-форм / коротких сторінок (не списків). */
+@Composable
+private fun Scrolled(pad: PaddingValues, content: @Composable () -> Unit) {
+    Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(pad)) { content() }
 }
 
 /* ───────────────── Desktop ───────────────── */
@@ -132,9 +144,7 @@ private fun DesktopShell(state: AppState) {
                 Modifier.fillMaxWidth().align(Alignment.TopCenter),
                 color = CashpilotColors.heroCyan, trackColor = CashpilotColors.surface,
             )
-            Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(28.dp)) {
-                AnimatedScreen(current, state, isCompact = false)
-            }
+            AnimatedScreen(current, state, isCompact = false)
         }
     }
 }
@@ -214,9 +224,11 @@ private fun MobileShell(state: AppState) {
             if (state.busy) LinearProgressIndicator(
                 Modifier.fillMaxWidth(), color = CashpilotColors.heroCyan, trackColor = CashpilotColors.surface,
             )
-            Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState())
-                .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 110.dp)) {
-                if (showMore) MoreList(current, state) { current = it; showMore = false }
+            Box(Modifier.fillMaxSize()) {
+                if (showMore) Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+                    .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 110.dp)) {
+                    MoreList(current, state) { current = it; showMore = false }
+                }
                 else AnimatedScreen(current, state, isCompact = true)
             }
         }
