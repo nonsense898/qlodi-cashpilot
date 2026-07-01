@@ -55,7 +55,7 @@ class CashStrings {
     // invoices / bills
     var invoicesSub = ""; var client = ""; var invoiceBtn = ""; var noInvoices = ""; var createFirst = ""
     var billsSub = ""; var vendor = ""; var billBtn = ""; var noBills = ""
-    var withVat20 = ""; var totalWithVat = ""; var netAmount = ""
+    var withVat20 = ""; var totalWithVat = ""; var netAmount = ""; var vatRate = ""; var vatExempt = ""
     // reports
     var reportsSub = ""; var trialBalance = ""; var balanceSheet = ""; var accountCol = ""
     var totalRow = ""; var noData = ""; var addEntries = ""; var assetsTotal = ""; var liabEquityTotal = ""
@@ -102,7 +102,7 @@ private fun en() = CashStrings().apply {
     invoicesSub = "Customer invoices · revenue + VAT"; client = "Client"; invoiceBtn = "Invoice"; noInvoices = "No invoices"
     createFirst = "Create the first via the button above."
     billsSub = "Vendor bills · expense + VAT"; vendor = "Vendor"; billBtn = "Bill"; noBills = "No bills"
-    withVat20 = "VAT 20%"; totalWithVat = "Total"; netAmount = "Amount (net)"
+    withVat20 = "VAT 20%"; totalWithVat = "Total"; netAmount = "Amount (net)"; vatRate = "VAT rate"; vatExempt = "Exempt"
     reportsSub = "Derived from the ledger"; trialBalance = "Trial Balance"; balanceSheet = "Balance Sheet"; accountCol = "Account"
     totalRow = "Total"; noData = "No data"; addEntries = "Add entries."; assetsTotal = "Total assets"; liabEquityTotal = "Total liabilities & equity"
     cashFlow = "Cash Flow"; cfOperating = "Operating"; cfInvesting = "Investing"; cfFinancing = "Financing"
@@ -148,7 +148,7 @@ private fun uk() = CashStrings().apply {
     invoicesSub = "Рахунки клієнтам · дохід + ПДВ"; client = "Клієнт"; invoiceBtn = "Інвойс"; noInvoices = "Немає інвойсів"
     createFirst = "Створіть перший через кнопку вгорі."
     billsSub = "Рахунки постачальників · витрата + ПДВ"; vendor = "Постачальник"; billBtn = "Рахунок"; noBills = "Немає рахунків"
-    withVat20 = "ПДВ 20%"; totalWithVat = "Разом"; netAmount = "Сума (нетто)"
+    withVat20 = "ПДВ 20%"; totalWithVat = "Разом"; netAmount = "Сума (нетто)"; vatRate = "Ставка ПДВ"; vatExempt = "Без ПДВ"
     reportsSub = "Деривуються з леджера"; trialBalance = "Оборотно-сальдова"; balanceSheet = "Баланс"; accountCol = "Рахунок"
     totalRow = "Разом"; noData = "Немає даних"; addEntries = "Додайте проводки."; assetsTotal = "Активи разом"; liabEquityTotal = "Пасиви разом"
     cashFlow = "Рух коштів"; cfOperating = "Операційна"; cfInvesting = "Інвестиційна"; cfFinancing = "Фінансова"

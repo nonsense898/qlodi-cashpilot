@@ -257,9 +257,9 @@ private fun DocForm(counterpartyLabel: String, onSubmit: (String, String, Double
     var date by remember { mutableStateOf("2026-06-30") }
     var who by remember { mutableStateOf("") }
     var net by remember { mutableStateOf("") }
-    var withVat by remember { mutableStateOf(true) }
+    var vatRate by remember { mutableStateOf(20) }   // 20/14/7/0 %, -1 = звільнено
     val netD = parseAmount(net)
-    val vat = if (withVat) netD * 0.2 else 0.0
+    val vat = if (vatRate > 0) netD * vatRate / 100.0 else 0.0
 
     QCard(Modifier.fillMaxWidth()) {
         Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
@@ -267,18 +267,21 @@ private fun DocForm(counterpartyLabel: String, onSubmit: (String, String, Double
                 QTextField(date, { date = filterDateInput(it) }, S.date, Modifier.width(150.dp), keyboardType = KeyboardType.Number)
                 QTextField(who, { who = it }, counterpartyLabel, Modifier.weight(1f))
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.md), verticalAlignment = Alignment.CenterVertically) {
-                QTextField(net, { net = filterDecimalInput(it) }, S.netAmount, Modifier.weight(1f), keyboardType = KeyboardType.Decimal)
-                FilterChip(
-                    selected = withVat, onClick = { withVat = !withVat },
-                    label = { Text(S.withVat20) },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = c.heroCyan.copy(alpha = 0.16f), selectedLabelColor = c.heroCyan,
-                        containerColor = c.surfaceHigh, labelColor = c.textMuted,
-                    ),
-                )
+            QTextField(net, { net = filterDecimalInput(it) }, S.netAmount, Modifier.fillMaxWidth(), keyboardType = KeyboardType.Decimal)
+            Text(S.vatRate, color = c.textMuted, style = MaterialTheme.typography.labelMedium)
+            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                listOf(20, 14, 7, 0, -1).forEach { r ->
+                    FilterChip(
+                        selected = r == vatRate, onClick = { vatRate = r },
+                        label = { Text(if (r == -1) S.vatExempt else "$r%") },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = c.heroCyan.copy(alpha = 0.16f), selectedLabelColor = c.heroCyan,
+                            containerColor = c.surfaceHigh, labelColor = c.textMuted,
+                        ),
+                    )
+                }
             }
-            Text("${S.totalWithVat}: ${formatMoneyUah(netD + vat)}  (${S.withVat20} ${formatMoneyUah(vat)})", color = c.textSecondary, style = MaterialTheme.typography.bodySmall)
+            Text("${S.totalWithVat}: ${formatMoneyUah(netD + vat)}  (VAT ${formatMoneyUah(vat)})", color = c.textSecondary, style = MaterialTheme.typography.bodySmall)
             QPrimaryButton(S.post, onClick = { onSubmit(date.trim(), who.trim(), netD, vat) }, enabled = netD > 0 && who.isNotBlank(), modifier = Modifier.fillMaxWidth())
         }
     }
