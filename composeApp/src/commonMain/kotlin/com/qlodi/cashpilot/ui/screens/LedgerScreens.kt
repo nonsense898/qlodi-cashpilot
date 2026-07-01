@@ -280,7 +280,7 @@ fun ReportsScreen(state: AppState) {
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.lg)) {
         SectionTitle(S.navReports, S.reportsSub)
         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-            listOf(S.trialBalance, S.balanceSheet, S.cashFlow).forEachIndexed { i, t ->
+            listOf(S.trialBalance, S.balanceSheet, S.cashFlow, S.pnlTab).forEachIndexed { i, t ->
                 val on = i == tab
                 Box(Modifier.clip(RoundedCornerShape(Radii.pill)).background(if (on) c.accentDim else c.surface)
                     .border(1.dp, if (on) c.heroCyan else c.border, RoundedCornerShape(Radii.pill))
@@ -292,7 +292,8 @@ fun ReportsScreen(state: AppState) {
         when (tab) {
             0 -> TrialBalanceCard(state.trialBalance)
             1 -> BalanceSheetCard(state.balanceSheet)
-            else -> CashFlowCard(state.cashFlow)
+            2 -> CashFlowCard(state.cashFlow)
+            else -> PnlReportCard(state.pnl)
         }
         Spacer(Modifier.height(Spacing.huge))
     }
@@ -313,6 +314,29 @@ private fun CashFlowCard(cf: CashFlowView?) {
             Box(Modifier.fillMaxWidth().height(1.dp).background(c.border))
             CfRow(S.cfNetChange, cf.netChange, if ((cf.netChange.toDoubleOrNull() ?: 0.0) >= 0) c.positive else c.danger, bold = true)
             CfRow(S.cfClosing, cf.closingCash, c.textPrimary, bold = true)
+        }
+    }
+}
+
+@Composable
+private fun PnlReportCard(p: PnlView?) {
+    val c = CashpilotColors
+    val S = LocalStrings.current
+    if (p == null) { EmptyState(Icons.Filled.Assessment, S.noData, S.addEntries); return }
+    QCard(Modifier.fillMaxWidth()) {
+        Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
+            CfRow(S.revenue, p.revenue, c.positive)
+            CfRow(S.pnlCogs, p.cogs, c.danger)
+            Box(Modifier.fillMaxWidth().height(1.dp).background(c.border))
+            CfRow(S.pnlGross, p.grossProfit, c.textPrimary, bold = true)
+            CfRow(S.pnlAdmin, p.adminExpenses, c.textSecondary)
+            CfRow(S.pnlSelling, p.sellingExpenses, c.textSecondary)
+            CfRow(S.pnlOperating, p.operatingProfit, c.textPrimary, bold = true)
+            CfRow(S.pnlOtherIncome, p.otherIncome, c.textSecondary)
+            CfRow(S.pnlFinanceCost, p.financeCost, c.textSecondary)
+            CfRow(S.pnlIncomeTax, p.incomeTax, c.textSecondary)
+            Box(Modifier.fillMaxWidth().height(1.dp).background(c.border))
+            CfRow(S.netProfit, p.netProfit, if ((p.netProfit.toDoubleOrNull() ?: 0.0) >= 0) c.positive else c.danger, bold = true)
         }
     }
 }

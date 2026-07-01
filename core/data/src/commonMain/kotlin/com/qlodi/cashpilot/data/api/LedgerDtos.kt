@@ -84,6 +84,14 @@ data class TrialBalanceView(
 )
 
 @Serializable
+data class PnlView(
+    val from: String, val to: String,
+    val revenue: String, val cogs: String, val grossProfit: String,
+    val adminExpenses: String, val sellingExpenses: String, val otherOpex: String, val operatingProfit: String,
+    val otherIncome: String, val financeCost: String, val incomeTax: String, val netProfit: String,
+)
+
+@Serializable
 data class CashFlowView(
     val from: String, val to: String,
     val operating: String, val investing: String, val financing: String,

@@ -25,6 +25,7 @@ class AppState {
     var trialBalance by mutableStateOf<TrialBalanceView?>(null); private set
     var balanceSheet by mutableStateOf<BalanceSheetView?>(null); private set
     var cashFlow by mutableStateOf<CashFlowView?>(null); private set
+    var pnl by mutableStateOf<PnlView?>(null); private set
     var periods by mutableStateOf<List<PeriodView>>(emptyList()); private set
 
     /** asOf для звітів — «усе» (включає всі проводки). */
@@ -77,6 +78,7 @@ class AppState {
             trialBalance = api.trialBalance(it.id, asOf).getOrNull()
             balanceSheet = api.balanceSheet(it.id, asOf).getOrNull()
             cashFlow = api.cashFlow(it.id, "1970-01-01", asOf).getOrNull()
+            pnl = api.pnl(it.id, "1970-01-01", asOf).getOrNull()
         }
     }
 

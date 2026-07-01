@@ -71,6 +71,9 @@ class CashpilotApi(private val tokenProvider: TokenProvider = SessionStore) {
     suspend fun cashFlow(eid: String, from: String, to: String): ApiResult<CashFlowView> =
         apiCall { client.get(ApiConfig.url("/ledger/entities/$eid/reports/cash-flow")) { parameter("from", from); parameter("to", to) } }
 
+    suspend fun pnl(eid: String, from: String, to: String): ApiResult<PnlView> =
+        apiCall { client.get(ApiConfig.url("/ledger/entities/$eid/reports/pnl")) { parameter("from", from); parameter("to", to) } }
+
     suspend fun yearEndClose(eid: String): ApiResult<JournalEntryView> =
         apiCall { client.post(ApiConfig.url("/ledger/entities/$eid/periods/year-end-close")) }
 }

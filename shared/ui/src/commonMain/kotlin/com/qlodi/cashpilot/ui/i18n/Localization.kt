@@ -62,6 +62,8 @@ class CashStrings {
     var cashFlow = ""; var cfOperating = ""; var cfInvesting = ""; var cfFinancing = ""
     var cfNetChange = ""; var cfOpening = ""; var cfClosing = ""
     var yearEndClose = ""; var yearEndCloseMsg = ""
+    var pnlTab = ""; var pnlCogs = ""; var pnlGross = ""; var pnlAdmin = ""; var pnlSelling = ""
+    var pnlOtherOpex = ""; var pnlOperating = ""; var pnlOtherIncome = ""; var pnlFinanceCost = ""; var pnlIncomeTax = ""
 }
 
 private fun en() = CashStrings().apply {
@@ -106,6 +108,8 @@ private fun en() = CashStrings().apply {
     cashFlow = "Cash Flow"; cfOperating = "Operating"; cfInvesting = "Investing"; cfFinancing = "Financing"
     cfNetChange = "Net change"; cfOpening = "Opening cash"; cfClosing = "Closing cash"
     yearEndClose = "Year-end close"; yearEndCloseMsg = "Zeroes income & expenses into retained earnings (441). A closing entry is created."
+    pnlTab = "P&L"; pnlCogs = "Cost of sales"; pnlGross = "Gross profit"; pnlAdmin = "Administrative"; pnlSelling = "Selling"
+    pnlOtherOpex = "Other opex"; pnlOperating = "Operating profit"; pnlOtherIncome = "Other income"; pnlFinanceCost = "Finance cost"; pnlIncomeTax = "Income tax"
 }
 
 private fun uk() = CashStrings().apply {
@@ -150,6 +154,8 @@ private fun uk() = CashStrings().apply {
     cashFlow = "Рух коштів"; cfOperating = "Операційна"; cfInvesting = "Інвестиційна"; cfFinancing = "Фінансова"
     cfNetChange = "Чиста зміна"; cfOpening = "Кошти на початок"; cfClosing = "Кошти на кінець"
     yearEndClose = "Закрити рік"; yearEndCloseMsg = "Обнуляє доходи й витрати в нерозподілений прибуток (441). Створюється closing-проводка."
+    pnlTab = "P&L"; pnlCogs = "Собівартість"; pnlGross = "Валовий прибуток"; pnlAdmin = "Адміністративні"; pnlSelling = "Збут"
+    pnlOtherOpex = "Інші операційні"; pnlOperating = "Операційний прибуток"; pnlOtherIncome = "Інші доходи"; pnlFinanceCost = "Фінвитрати"; pnlIncomeTax = "Податок на прибуток"
 }
 
 /** Локалізована назва розділу навігації. */
