@@ -124,8 +124,13 @@ fun PeriodsScreen(state: AppState) {
     val c = CashpilotColors
     val S = LocalStrings.current
     val scope = rememberCoroutineScope()
+    var confirmClose by remember { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.lg)) {
-        SectionTitle(S.navPeriods, S.periodsSub)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            SectionTitle(S.navPeriods, S.periodsSub)
+            Spacer(Modifier.weight(1f))
+            if (state.periods.isNotEmpty()) QTonalButton(S.yearEndClose, { confirmClose = true })
+        }
         if (state.periods.isEmpty()) {
             EmptyState(Icons.Filled.CalendarMonth, S.noPeriods, S.noPeriodsSub)
             return@Column
@@ -151,6 +156,14 @@ fun PeriodsScreen(state: AppState) {
             }
         }
         Spacer(Modifier.height(Spacing.huge))
+    }
+
+    if (confirmClose) {
+        ConfirmDialog(
+            title = S.yearEndClose, message = S.yearEndCloseMsg, confirmLabel = S.yearEndClose,
+            onConfirm = { confirmClose = false; scope.launch { state.yearEndClose() } },
+            onDismiss = { confirmClose = false },
+        )
     }
 }
 

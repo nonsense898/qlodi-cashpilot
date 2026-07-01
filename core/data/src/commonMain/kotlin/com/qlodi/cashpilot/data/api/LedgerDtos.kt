@@ -84,6 +84,13 @@ data class TrialBalanceView(
 )
 
 @Serializable
+data class CashFlowView(
+    val from: String, val to: String,
+    val operating: String, val investing: String, val financing: String,
+    val netChange: String, val openingCash: String, val closingCash: String, val reconciles: Boolean,
+)
+
+@Serializable
 data class BalanceSheetLine(val code: String, val name: String, val amount: String)
 
 @Serializable

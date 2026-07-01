@@ -280,7 +280,7 @@ fun ReportsScreen(state: AppState) {
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.lg)) {
         SectionTitle(S.navReports, S.reportsSub)
         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-            listOf(S.trialBalance, S.balanceSheet).forEachIndexed { i, t ->
+            listOf(S.trialBalance, S.balanceSheet, S.cashFlow).forEachIndexed { i, t ->
                 val on = i == tab
                 Box(Modifier.clip(RoundedCornerShape(Radii.pill)).background(if (on) c.accentDim else c.surface)
                     .border(1.dp, if (on) c.heroCyan else c.border, RoundedCornerShape(Radii.pill))
@@ -289,8 +289,41 @@ fun ReportsScreen(state: AppState) {
                 }
             }
         }
-        if (tab == 0) TrialBalanceCard(state.trialBalance) else BalanceSheetCard(state.balanceSheet)
+        when (tab) {
+            0 -> TrialBalanceCard(state.trialBalance)
+            1 -> BalanceSheetCard(state.balanceSheet)
+            else -> CashFlowCard(state.cashFlow)
+        }
         Spacer(Modifier.height(Spacing.huge))
+    }
+}
+
+@Composable
+private fun CashFlowCard(cf: CashFlowView?) {
+    val c = CashpilotColors
+    val S = LocalStrings.current
+    if (cf == null) { EmptyState(Icons.Filled.Assessment, S.noData, S.addEntries); return }
+    QCard(Modifier.fillMaxWidth()) {
+        Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
+            CfRow(S.cfOpening, cf.openingCash, c.textMuted)
+            Box(Modifier.fillMaxWidth().height(1.dp).background(c.border))
+            CfRow(S.cfOperating, cf.operating, c.textPrimary)
+            CfRow(S.cfInvesting, cf.investing, c.textPrimary)
+            CfRow(S.cfFinancing, cf.financing, c.textPrimary)
+            Box(Modifier.fillMaxWidth().height(1.dp).background(c.border))
+            CfRow(S.cfNetChange, cf.netChange, if ((cf.netChange.toDoubleOrNull() ?: 0.0) >= 0) c.positive else c.danger, bold = true)
+            CfRow(S.cfClosing, cf.closingCash, c.textPrimary, bold = true)
+        }
+    }
+}
+
+@Composable
+private fun CfRow(label: String, amount: String, color: androidx.compose.ui.graphics.Color, bold: Boolean = false) {
+    val c = CashpilotColors
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Text(label, color = if (bold) c.textPrimary else c.textSecondary,
+            style = if (bold) MaterialTheme.typography.titleSmall else MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+        NumberText(money(amount), color = color, size = if (bold) 14 else 13, weight = if (bold) FontWeight.Bold else FontWeight.Medium)
     }
 }
 

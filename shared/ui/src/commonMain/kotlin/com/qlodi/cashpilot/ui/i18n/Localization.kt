@@ -59,6 +59,9 @@ class CashStrings {
     // reports
     var reportsSub = ""; var trialBalance = ""; var balanceSheet = ""; var accountCol = ""
     var totalRow = ""; var noData = ""; var addEntries = ""; var assetsTotal = ""; var liabEquityTotal = ""
+    var cashFlow = ""; var cfOperating = ""; var cfInvesting = ""; var cfFinancing = ""
+    var cfNetChange = ""; var cfOpening = ""; var cfClosing = ""
+    var yearEndClose = ""; var yearEndCloseMsg = ""
 }
 
 private fun en() = CashStrings().apply {
@@ -100,6 +103,9 @@ private fun en() = CashStrings().apply {
     withVat20 = "VAT 20%"; totalWithVat = "Total"; netAmount = "Amount (net)"
     reportsSub = "Derived from the ledger"; trialBalance = "Trial Balance"; balanceSheet = "Balance Sheet"; accountCol = "Account"
     totalRow = "Total"; noData = "No data"; addEntries = "Add entries."; assetsTotal = "Total assets"; liabEquityTotal = "Total liabilities & equity"
+    cashFlow = "Cash Flow"; cfOperating = "Operating"; cfInvesting = "Investing"; cfFinancing = "Financing"
+    cfNetChange = "Net change"; cfOpening = "Opening cash"; cfClosing = "Closing cash"
+    yearEndClose = "Year-end close"; yearEndCloseMsg = "Zeroes income & expenses into retained earnings (441). A closing entry is created."
 }
 
 private fun uk() = CashStrings().apply {
@@ -141,6 +147,9 @@ private fun uk() = CashStrings().apply {
     withVat20 = "ПДВ 20%"; totalWithVat = "Разом"; netAmount = "Сума (нетто)"
     reportsSub = "Деривуються з леджера"; trialBalance = "Оборотно-сальдова"; balanceSheet = "Баланс"; accountCol = "Рахунок"
     totalRow = "Разом"; noData = "Немає даних"; addEntries = "Додайте проводки."; assetsTotal = "Активи разом"; liabEquityTotal = "Пасиви разом"
+    cashFlow = "Рух коштів"; cfOperating = "Операційна"; cfInvesting = "Інвестиційна"; cfFinancing = "Фінансова"
+    cfNetChange = "Чиста зміна"; cfOpening = "Кошти на початок"; cfClosing = "Кошти на кінець"
+    yearEndClose = "Закрити рік"; yearEndCloseMsg = "Обнуляє доходи й витрати в нерозподілений прибуток (441). Створюється closing-проводка."
 }
 
 /** Локалізована назва розділу навігації. */

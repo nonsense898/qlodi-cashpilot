@@ -24,6 +24,7 @@ class AppState {
     var entries by mutableStateOf<List<JournalEntryView>>(emptyList()); private set
     var trialBalance by mutableStateOf<TrialBalanceView?>(null); private set
     var balanceSheet by mutableStateOf<BalanceSheetView?>(null); private set
+    var cashFlow by mutableStateOf<CashFlowView?>(null); private set
     var periods by mutableStateOf<List<PeriodView>>(emptyList()); private set
 
     /** asOf для звітів — «усе» (включає всі проводки). */
@@ -75,6 +76,16 @@ class AppState {
         entity?.let {
             trialBalance = api.trialBalance(it.id, asOf).getOrNull()
             balanceSheet = api.balanceSheet(it.id, asOf).getOrNull()
+            cashFlow = api.cashFlow(it.id, "1970-01-01", asOf).getOrNull()
+        }
+    }
+
+    /** Закриття року. null при успіху, інакше код помилки. */
+    suspend fun yearEndClose(): String? {
+        val eid = entity?.id ?: return "no_entity"
+        return when (val r = api.yearEndClose(eid)) {
+            is ApiResult.Ok -> { reloadEntries(); reloadReports(); reloadPeriods(); null }
+            is ApiResult.Err -> friendly(r.error)
         }
     }
 
