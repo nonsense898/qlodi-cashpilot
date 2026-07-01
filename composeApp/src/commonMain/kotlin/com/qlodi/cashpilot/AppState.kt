@@ -27,6 +27,7 @@ class AppState {
     var cashFlow by mutableStateOf<CashFlowView?>(null); private set
     var pnl by mutableStateOf<PnlView?>(null); private set
     var periods by mutableStateOf<List<PeriodView>>(emptyList()); private set
+    var bankTxns by mutableStateOf<List<BankTxnView>>(emptyList()); private set
 
     /** asOf для звітів — «усе» (включає всі проводки). */
     private val asOf = "2100-12-31"
@@ -66,8 +67,28 @@ class AppState {
         val list = api.listEntities().getOrNull().orEmpty()
         val e = list.firstOrNull() ?: api.createEntity(CreateEntityRequest(name = "Моя компанія", jurisdiction = "UA")).getOrNull()
         entity = e
-        if (e != null) { reloadAccounts(); reloadEntries(); reloadReports(); reloadPeriods() }
+        if (e != null) { reloadAccounts(); reloadEntries(); reloadReports(); reloadPeriods(); reloadBank() }
         busy = false
+    }
+
+    suspend fun reloadBank() { entity?.let { bankTxns = api.listBankTxns(it.id, true).getOrNull().orEmpty() } }
+
+    /** Імпорт CSV-виписки. null при успіху. */
+    suspend fun importBank(bankAccountId: String, rows: List<BankTxnImport>): String? {
+        val eid = entity?.id ?: return "no_entity"
+        return when (val r = api.importBank(eid, ImportBankRequest(bankAccountId, rows))) {
+            is ApiResult.Ok -> { reloadBank(); null }
+            is ApiResult.Err -> friendly(r.error)
+        }
+    }
+
+    /** Звірка банк-транзакції з контр-рахунком (створює проводку). null при успіху. */
+    suspend fun reconcileBank(txnId: String, counterAccountId: String): String? {
+        val eid = entity?.id ?: return "no_entity"
+        return when (val r = api.reconcileBankTxn(eid, txnId, ReconcileRequest(counterAccountId))) {
+            is ApiResult.Ok -> { reloadBank(); reloadEntries(); reloadReports(); null }
+            is ApiResult.Err -> friendly(r.error)
+        }
     }
 
     suspend fun reloadAccounts() { entity?.let { accounts = api.listAccounts(it.id).getOrNull().orEmpty() } }

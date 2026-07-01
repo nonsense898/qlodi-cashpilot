@@ -84,6 +84,24 @@ data class TrialBalanceView(
 )
 
 @Serializable
+data class BankTxnImport(val txnDate: String, val amount: String, val description: String? = null)
+
+@Serializable
+data class ImportBankRequest(val bankAccountId: String, val transactions: List<BankTxnImport>)
+
+@Serializable
+data class ImportResult(val imported: Int = 0)
+
+@Serializable
+data class BankTxnView(
+    val id: String, val bankAccountId: String, val txnDate: String, val amount: String,
+    val description: String? = null, val matched: Boolean = false, val journalEntryId: String? = null,
+)
+
+@Serializable
+data class ReconcileRequest(val counterAccountId: String, val memo: String? = null)
+
+@Serializable
 data class PnlView(
     val from: String, val to: String,
     val revenue: String, val cogs: String, val grossProfit: String,

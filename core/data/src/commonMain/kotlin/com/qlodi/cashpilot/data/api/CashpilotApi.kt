@@ -74,6 +74,16 @@ class CashpilotApi(private val tokenProvider: TokenProvider = SessionStore) {
     suspend fun pnl(eid: String, from: String, to: String): ApiResult<PnlView> =
         apiCall { client.get(ApiConfig.url("/ledger/entities/$eid/reports/pnl")) { parameter("from", from); parameter("to", to) } }
 
+    /* ── Banking / reconciliation ── */
+    suspend fun importBank(eid: String, req: ImportBankRequest): ApiResult<ImportResult> =
+        apiCall { client.post(ApiConfig.url("/ledger/entities/$eid/bank/import")) { setBody(req) } }
+
+    suspend fun listBankTxns(eid: String, unmatchedOnly: Boolean = true): ApiResult<List<BankTxnView>> =
+        apiCall { client.get(ApiConfig.url("/ledger/entities/$eid/bank/transactions")) { parameter("unmatchedOnly", unmatchedOnly.toString()) } }
+
+    suspend fun reconcileBankTxn(eid: String, txnId: String, req: ReconcileRequest): ApiResult<JournalEntryView> =
+        apiCall { client.post(ApiConfig.url("/ledger/entities/$eid/bank/transactions/$txnId/reconcile")) { setBody(req) } }
+
     suspend fun yearEndClose(eid: String): ApiResult<JournalEntryView> =
         apiCall { client.post(ApiConfig.url("/ledger/entities/$eid/periods/year-end-close")) }
 }

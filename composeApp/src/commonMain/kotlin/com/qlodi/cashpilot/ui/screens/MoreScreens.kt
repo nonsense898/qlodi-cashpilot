@@ -1,7 +1,13 @@
 package com.qlodi.cashpilot.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.AccountBalance
@@ -24,7 +30,10 @@ import com.qlodi.cashpilot.ui.i18n.LocalStrings
 import com.qlodi.cashpilot.ui.i18n.accountName
 import com.qlodi.cashpilot.ui.components.*
 import com.qlodi.cashpilot.ui.theme.CashpilotColors
+import com.qlodi.cashpilot.ui.theme.Radii
 import com.qlodi.cashpilot.ui.theme.Spacing
+import com.qlodi.cashpilot.ui.util.parseBankCsv
+import com.qlodi.cashpilot.ui.util.rememberCsvPickerState
 import com.qlodi.cashpilot.ui.util.filterDateInput
 import com.qlodi.cashpilot.ui.util.filterDecimalInput
 import com.qlodi.cashpilot.ui.util.formatMoney
@@ -50,10 +59,24 @@ fun BankingScreen(state: AppState) {
     val c = CashpilotColors
     val S = LocalStrings.current
     val uk = LocalLanguage.current == AppLanguage.Ukrainian
+    val scope = rememberCoroutineScope()
     val cash = state.accounts.filter { it.subtype in setOf("CASH", "BANK", "BANK_FX") }
     val total = cash.sumOf { balanceOf(state, it) }
+    val bankAcc = state.accBySub("BANK") ?: cash.firstOrNull()
+    var reconcileTxn by remember { mutableStateOf<BankTxnView?>(null) }
+    val picker = rememberCsvPickerState { text ->
+        if (text != null && bankAcc != null) {
+            val rows = parseBankCsv(text).map { BankTxnImport(it.first, it.second, it.third) }
+            if (rows.isNotEmpty()) scope.launch { state.importBank(bankAcc.id, rows) }
+        }
+    }
+
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.lg)) {
-        SectionTitle(S.navBanking, S.cashPosition)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            SectionTitle(S.navBanking, S.cashPosition)
+            Spacer(Modifier.weight(1f))
+            if (bankAcc != null) QTonalButton(S.importStatement, { picker.pick() })
+        }
         if (cash.isEmpty()) { EmptyState(Icons.Filled.AccountBalance, S.noCashAccounts, S.noCashAccountsSub); return@Column }
         QCard(Modifier.fillMaxWidth()) {
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
@@ -73,8 +96,57 @@ fun BankingScreen(state: AppState) {
                 }
             }
         }
-        Text(S.reconSoon, color = c.textMuted, style = MaterialTheme.typography.bodySmall)
+        // Reconciliation — не звірені банк-транзакції (з CSV)
+        if (state.bankTxns.isNotEmpty()) {
+            Text("${S.unreconciled} · ${state.bankTxns.size}", color = c.textSecondary, style = MaterialTheme.typography.titleSmall)
+            state.bankTxns.forEach { t ->
+                QCard(Modifier.fillMaxWidth()) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text(t.description ?: "—", color = c.textPrimary, style = MaterialTheme.typography.bodyLarge)
+                            Text(t.txnDate, color = c.textMuted, style = MaterialTheme.typography.bodySmall)
+                        }
+                        val inflow = (t.amount.toDoubleOrNull() ?: 0.0) >= 0
+                        NumberText(formatMoneyUah(t.amount.toDoubleOrNull() ?: 0.0), color = if (inflow) c.positive else c.danger, size = 14)
+                        Spacer(Modifier.width(Spacing.md))
+                        QTonalButton(S.reconcileBtn, { reconcileTxn = t })
+                    }
+                }
+            }
+        } else {
+            Text(S.noBankTxns, color = c.textMuted, style = MaterialTheme.typography.bodySmall)
+        }
         Spacer(Modifier.height(Spacing.huge))
+    }
+
+    reconcileTxn?.let { t ->
+        CounterAccountDialog(state.accounts, uk, S.chooseCounter, onDismiss = { reconcileTxn = null }) { acc ->
+            reconcileTxn = null; scope.launch { state.reconcileBank(t.id, acc.id) }
+        }
+    }
+}
+
+/** Діалог вибору контр-рахунку для звірки. */
+@Composable
+private fun CounterAccountDialog(accounts: List<AccountView>, uk: Boolean, title: String, onDismiss: () -> Unit, onPick: (AccountView) -> Unit) {
+    val c = CashpilotColors
+    var query by remember { mutableStateOf("") }
+    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
+        Box(Modifier.fillMaxWidth().clip(RoundedCornerShape(Radii.lg)).background(c.surface).border(1.dp, c.border, RoundedCornerShape(Radii.lg)).padding(Spacing.lg)) {
+            Column(Modifier.heightIn(max = 480.dp), verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                Text(title, color = c.textPrimary, style = MaterialTheme.typography.titleMedium)
+                QTextField(query, { query = it }, "")
+                val filtered = accounts.filter { query.isBlank() || it.code.contains(query, true) || it.name.contains(query, true) || accountName(it.code, it.name, uk).contains(query, true) }
+                LazyColumn(Modifier.heightIn(max = 380.dp)) {
+                    items(filtered, key = { it.id }) { a ->
+                        Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(Radii.sm)).clickable { onPick(a) }.padding(horizontal = Spacing.md, vertical = Spacing.md), verticalAlignment = Alignment.CenterVertically) {
+                            Text(a.code, color = c.heroCyan, style = MaterialTheme.typography.titleSmall, modifier = Modifier.width(52.dp))
+                            Text(accountName(a.code, a.name, uk), color = c.textPrimary, style = MaterialTheme.typography.bodyMedium)
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
