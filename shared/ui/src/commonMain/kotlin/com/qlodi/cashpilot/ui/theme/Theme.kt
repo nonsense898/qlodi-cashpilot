@@ -17,6 +17,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import org.jetbrains.compose.resources.Font
+import qlodi_cashpilot.shared.ui.generated.resources.Res
+import qlodi_cashpilot.shared.ui.generated.resources.geist_bold
+import qlodi_cashpilot.shared.ui.generated.resources.geist_medium
+import qlodi_cashpilot.shared.ui.generated.resources.geist_regular
+import qlodi_cashpilot.shared.ui.generated.resources.geist_semibold
+import qlodi_cashpilot.shared.ui.generated.resources.ibm_plex_mono_medium
+import qlodi_cashpilot.shared.ui.generated.resources.ibm_plex_mono_regular
+import qlodi_cashpilot.shared.ui.generated.resources.ibm_plex_mono_semibold
 
 /** Палітра (dark/light). Приглушений teal-cyan; чистий неон не вживаємо. */
 data class CashColors(
@@ -60,7 +69,21 @@ val CashpilotColors: CashColors get() = if (ThemeState.dark) DarkColors else Lig
 val LocalCashpilotColors = staticCompositionLocalOf { DarkColors }
 val LocalIsCompact = staticCompositionLocalOf { false }
 
-val NumberFontFamily = FontFamily.Monospace
+/** Geist — UI/body; IBM Plex Mono — числа/суми (табличні цифри, фінансова точність). */
+val NumberFontFamily: FontFamily
+    @Composable get() = FontFamily(
+        Font(Res.font.ibm_plex_mono_regular, weight = FontWeight.Normal),
+        Font(Res.font.ibm_plex_mono_medium, weight = FontWeight.Medium),
+        Font(Res.font.ibm_plex_mono_semibold, weight = FontWeight.SemiBold),
+    )
+
+val BodyFontFamily: FontFamily
+    @Composable get() = FontFamily(
+        Font(Res.font.geist_regular, weight = FontWeight.Normal),
+        Font(Res.font.geist_medium, weight = FontWeight.Medium),
+        Font(Res.font.geist_semibold, weight = FontWeight.SemiBold),
+        Font(Res.font.geist_bold, weight = FontWeight.Bold),
+    )
 
 object Spacing {
     val xs: Dp = 4.dp; val sm: Dp = 8.dp; val md: Dp = 12.dp; val lg: Dp = 16.dp
@@ -97,8 +120,17 @@ private val CashpilotShapes = Shapes(
     extraLarge = androidx.compose.foundation.shape.RoundedCornerShape(28.dp),
 )
 
-private fun cashpilotTypography(): Typography {
-    val t = Typography()
+@Composable
+private fun cashpilotTypography(bodyFamily: FontFamily): Typography {
+    val t = Typography().let { base ->
+        base.copy(
+            displayLarge = base.displayLarge.copy(fontFamily = bodyFamily), displayMedium = base.displayMedium.copy(fontFamily = bodyFamily), displaySmall = base.displaySmall.copy(fontFamily = bodyFamily),
+            headlineLarge = base.headlineLarge.copy(fontFamily = bodyFamily), headlineMedium = base.headlineMedium.copy(fontFamily = bodyFamily), headlineSmall = base.headlineSmall.copy(fontFamily = bodyFamily),
+            titleLarge = base.titleLarge.copy(fontFamily = bodyFamily), titleMedium = base.titleMedium.copy(fontFamily = bodyFamily), titleSmall = base.titleSmall.copy(fontFamily = bodyFamily),
+            bodyLarge = base.bodyLarge.copy(fontFamily = bodyFamily), bodyMedium = base.bodyMedium.copy(fontFamily = bodyFamily), bodySmall = base.bodySmall.copy(fontFamily = bodyFamily),
+            labelLarge = base.labelLarge.copy(fontFamily = bodyFamily), labelMedium = base.labelMedium.copy(fontFamily = bodyFamily), labelSmall = base.labelSmall.copy(fontFamily = bodyFamily),
+        )
+    }
     return t.copy(
         headlineMedium = t.headlineMedium.copy(fontWeight = FontWeight.Bold, fontSize = 26.sp, letterSpacing = (-0.01).sp),
         headlineSmall = t.headlineSmall.copy(fontWeight = FontWeight.Bold, fontSize = 22.sp),
@@ -122,7 +154,7 @@ fun CashpilotTheme(content: @Composable () -> Unit) {
     val c = CashpilotColors
     MaterialTheme(
         colorScheme = schemeFor(c),
-        typography = cashpilotTypography(),
+        typography = cashpilotTypography(BodyFontFamily),
         shapes = CashpilotShapes,
         content = content,
     )
