@@ -4,7 +4,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
@@ -14,89 +18,76 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-/**
- * Бренд-токени Qlodi CashPilot — dark navy + cyan, приглушені для premium + AA-контрасту.
- * primary (приглушений teal-cyan) — для площин/кнопок; accent (мʼякший cyan) — для дрібних
- * акцентів (іконки, активні стани, коди рахунків). Чистий неон #00FFFF більше не вживаємо.
- */
-object CashpilotColors {
-    val background = Color(0xFF06121F)
-    val surface = Color(0xFF0C1C2E)
-    val surfaceElevated = Color(0xFF122638)
-    val surfaceHigh = Color(0xFF18324A)        // поля вводу / підняті поверхні
-    val border = Color(0xFF21384E)
-    val borderStrong = Color(0xFF2C4A66)
+/** Палітра (dark/light). Приглушений teal-cyan; чистий неон не вживаємо. */
+data class CashColors(
+    val background: Color, val surface: Color, val surfaceElevated: Color, val surfaceHigh: Color,
+    val border: Color, val borderStrong: Color,
+    val primary: Color, val onPrimary: Color, val primaryContainer: Color, val onPrimaryContainer: Color,
+    val heroCyan: Color, val accentDim: Color,
+    val textPrimary: Color, val textSecondary: Color, val textMuted: Color, val onAccent: Color,
+    val positive: Color, val warning: Color, val danger: Color, val onDanger: Color,
+    val tabBg: Color, val tabBorder: Color, val isDark: Boolean,
+)
 
-    val primary = Color(0xFF1FB8C9)            // приглушений teal-cyan — fills/CTA
-    val onPrimary = Color(0xFF04161B)
-    val primaryContainer = Color(0xFF103A45)   // тональні активні поверхні
-    val onPrimaryContainer = Color(0xFF8DE9F1)
+private val DarkColors = CashColors(
+    background = Color(0xFF06121F), surface = Color(0xFF0C1C2E), surfaceElevated = Color(0xFF122638), surfaceHigh = Color(0xFF18324A),
+    border = Color(0xFF21384E), borderStrong = Color(0xFF2C4A66),
+    primary = Color(0xFF1FB8C9), onPrimary = Color(0xFF04161B), primaryContainer = Color(0xFF103A45), onPrimaryContainer = Color(0xFF8DE9F1),
+    heroCyan = Color(0xFF57E1EC), accentDim = Color(0x2657E1EC),
+    textPrimary = Color(0xFFE8F1F8), textSecondary = Color(0xFFA6BACB), textMuted = Color(0xFF7B90A4), onAccent = Color(0xFF04161B),
+    positive = Color(0xFF34C98A), warning = Color(0xFFE3A94F), danger = Color(0xFFE5675F), onDanger = Color(0xFF2A0A0A),
+    tabBg = Color(0xD90C1C2E), tabBorder = Color(0x0FFFFFFF), isDark = true,
+)
 
-    val heroCyan = Color(0xFF57E1EC)           // accent (мʼякший cyan) — іконки/активне
-    val accentDim = Color(0x2657E1EC)          // ~15% accent — активний фон таба
+private val LightColors = CashColors(
+    background = Color(0xFFF3F7FB), surface = Color(0xFFFFFFFF), surfaceElevated = Color(0xFFFFFFFF), surfaceHigh = Color(0xFFEDF3F8),
+    border = Color(0xFFDDE7F0), borderStrong = Color(0xFFC6D5E2),
+    primary = Color(0xFF0E8A99), onPrimary = Color(0xFFFFFFFF), primaryContainer = Color(0xFFCFEFF3), onPrimaryContainer = Color(0xFF073C44),
+    heroCyan = Color(0xFF0B7C8C), accentDim = Color(0x1A0B7C8C),
+    textPrimary = Color(0xFF0D2137), textSecondary = Color(0xFF45617A), textMuted = Color(0xFF6B829A), onAccent = Color(0xFFFFFFFF),
+    positive = Color(0xFF12936A), warning = Color(0xFFB57A1E), danger = Color(0xFFC7453C), onDanger = Color(0xFFFFFFFF),
+    tabBg = Color(0xF2FFFFFF), tabBorder = Color(0x14000000), isDark = false,
+)
 
-    val textPrimary = Color(0xFFE8F1F8)
-    val textSecondary = Color(0xFFA6BACB)
-    val textMuted = Color(0xFF7B90A4)          // піднято для AA на surface
-    val onAccent = Color(0xFF04161B)
-
-    val positive = Color(0xFF34C98A)
-    val warning = Color(0xFFE3A94F)
-    val danger = Color(0xFFE5675F)
-    val onDanger = Color(0xFF2A0A0A)
-
-    // Floating bottom nav (структура 1:1 із frc-personal docked pill)
-    val tabBg = Color(0xD90C1C2E)              // surface @ ~0.85
-    val tabBorder = Color(0x0FFFFFFF)          // білий @ 0.06
+/** Стан теми (light/dark) — світч у Settings. */
+object ThemeState {
+    var dark: Boolean by mutableStateOf(true)
 }
 
-val LocalCashpilotColors = staticCompositionLocalOf { CashpilotColors }
+/** Поточна палітра (реактивна — читає [ThemeState.dark]). */
+val CashpilotColors: CashColors get() = if (ThemeState.dark) DarkColors else LightColors
 
-/** Compact (телефонна) ширина < 600dp — provided з кореня App. */
+val LocalCashpilotColors = staticCompositionLocalOf { DarkColors }
 val LocalIsCompact = staticCompositionLocalOf { false }
 
-/** Моноширинні цифри (фінансові дані вирівнюються по розряду). */
 val NumberFontFamily = FontFamily.Monospace
 
-/** Spacing scale (4-pt base). */
 object Spacing {
-    val xs: Dp = 4.dp
-    val sm: Dp = 8.dp
-    val md: Dp = 12.dp
-    val lg: Dp = 16.dp
-    val xl: Dp = 20.dp
-    val xxl: Dp = 28.dp
-    val huge: Dp = 40.dp
+    val xs: Dp = 4.dp; val sm: Dp = 8.dp; val md: Dp = 12.dp; val lg: Dp = 16.dp
+    val xl: Dp = 20.dp; val xxl: Dp = 28.dp; val huge: Dp = 40.dp
 }
 
-/** Corner radii. */
 object Radii {
-    val sm: Dp = 10.dp
-    val md: Dp = 14.dp
-    val lg: Dp = 20.dp
-    val pill: Dp = 999.dp
+    val sm: Dp = 10.dp; val md: Dp = 14.dp; val lg: Dp = 20.dp; val pill: Dp = 999.dp
 }
 
-private val CashpilotScheme = darkColorScheme(
-    primary = CashpilotColors.primary,
-    onPrimary = CashpilotColors.onPrimary,
-    primaryContainer = CashpilotColors.primaryContainer,
-    onPrimaryContainer = CashpilotColors.onPrimaryContainer,
-    secondary = CashpilotColors.heroCyan,
-    onSecondary = CashpilotColors.onAccent,
-    secondaryContainer = CashpilotColors.primaryContainer,
-    onSecondaryContainer = CashpilotColors.onPrimaryContainer,
-    background = CashpilotColors.background,
-    onBackground = CashpilotColors.textPrimary,
-    surface = CashpilotColors.surface,
-    onSurface = CashpilotColors.textPrimary,
-    surfaceVariant = CashpilotColors.surfaceElevated,
-    onSurfaceVariant = CashpilotColors.textSecondary,
-    error = CashpilotColors.danger,
-    onError = CashpilotColors.onDanger,
-    outline = CashpilotColors.border,
-    outlineVariant = CashpilotColors.borderStrong,
-)
+private fun schemeFor(c: CashColors) = if (c.isDark) {
+    darkColorScheme(
+        primary = c.primary, onPrimary = c.onPrimary, primaryContainer = c.primaryContainer, onPrimaryContainer = c.onPrimaryContainer,
+        secondary = c.heroCyan, onSecondary = c.onAccent, secondaryContainer = c.primaryContainer, onSecondaryContainer = c.onPrimaryContainer,
+        background = c.background, onBackground = c.textPrimary, surface = c.surface, onSurface = c.textPrimary,
+        surfaceVariant = c.surfaceElevated, onSurfaceVariant = c.textSecondary, error = c.danger, onError = c.onDanger,
+        outline = c.border, outlineVariant = c.borderStrong,
+    )
+} else {
+    lightColorScheme(
+        primary = c.primary, onPrimary = c.onPrimary, primaryContainer = c.primaryContainer, onPrimaryContainer = c.onPrimaryContainer,
+        secondary = c.heroCyan, onSecondary = c.onAccent, secondaryContainer = c.primaryContainer, onSecondaryContainer = c.onPrimaryContainer,
+        background = c.background, onBackground = c.textPrimary, surface = c.surface, onSurface = c.textPrimary,
+        surfaceVariant = c.surfaceElevated, onSurfaceVariant = c.textSecondary, error = c.danger, onError = c.onDanger,
+        outline = c.border, outlineVariant = c.borderStrong,
+    )
+}
 
 private val CashpilotShapes = Shapes(
     extraSmall = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
@@ -109,7 +100,6 @@ private val CashpilotShapes = Shapes(
 private fun cashpilotTypography(): Typography {
     val t = Typography()
     return t.copy(
-        displaySmall = t.displaySmall.copy(fontWeight = FontWeight.Bold, letterSpacing = (-0.01).sp),
         headlineMedium = t.headlineMedium.copy(fontWeight = FontWeight.Bold, fontSize = 26.sp, letterSpacing = (-0.01).sp),
         headlineSmall = t.headlineSmall.copy(fontWeight = FontWeight.Bold, fontSize = 22.sp),
         titleLarge = t.titleLarge.copy(fontWeight = FontWeight.SemiBold, fontSize = 20.sp),
@@ -124,14 +114,14 @@ private fun cashpilotTypography(): Typography {
     )
 }
 
-/** Стиль для фінансових чисел (tabular). */
 val NumberTextStyle: TextStyle
     @Composable get() = MaterialTheme.typography.titleMedium.copy(fontFamily = NumberFontFamily)
 
 @Composable
 fun CashpilotTheme(content: @Composable () -> Unit) {
+    val c = CashpilotColors
     MaterialTheme(
-        colorScheme = CashpilotScheme,
+        colorScheme = schemeFor(c),
         typography = cashpilotTypography(),
         shapes = CashpilotShapes,
         content = content,

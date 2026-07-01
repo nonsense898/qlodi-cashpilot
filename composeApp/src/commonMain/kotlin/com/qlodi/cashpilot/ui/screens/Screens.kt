@@ -36,6 +36,8 @@ import com.qlodi.cashpilot.data.api.AccountType
 import com.qlodi.cashpilot.data.api.Direction
 import com.qlodi.cashpilot.data.api.EntryStatus
 import androidx.compose.material.icons.filled.Settings
+import com.qlodi.cashpilot.ui.i18n.LocalStrings
+import com.qlodi.cashpilot.ui.i18n.title
 import com.qlodi.cashpilot.ui.nav.CashpilotDestination
 import com.qlodi.cashpilot.ui.theme.CashpilotColors
 import com.qlodi.cashpilot.ui.theme.Spacing
@@ -45,6 +47,7 @@ import com.qlodi.cashpilot.ui.util.formatMoney
 @Composable
 fun DashboardScreen(state: AppState, isCompact: Boolean) {
     val c = CashpilotColors
+    val S = LocalStrings.current
     fun amt(s: String) = s.toDoubleOrNull() ?: 0.0
     val posted = state.entries.filter { it.status == EntryStatus.POSTED }
     val accType = state.accounts.associate { it.id to it.type }
@@ -65,16 +68,16 @@ fun DashboardScreen(state: AppState, isCompact: Boolean) {
 
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            SectionTitle("Dashboard", state.entity?.name ?: "—")
+            SectionTitle(S.navDashboard, state.entity?.name ?: "—")
             Spacer(Modifier.weight(1f))
             QBadge(state.entity?.let { "${it.jurisdiction} · ${it.functionalCurrency}" } ?: "—")
         }
 
         val kpis = listOf(
-            Quad("Кошти на рахунках", formatMoney(cash, "UAH"), "${posted.size} проводок", c.textSecondary),
-            Quad("Дохід", formatMoney(revenue, "UAH"), "усього", c.positive),
-            Quad("Витрати", formatMoney(expense, "UAH"), "усього", c.danger),
-            Quad("Чистий прибуток", formatMoney(profit, "UAH"), if (profit >= 0) "прибуток" else "збиток", if (profit >= 0) c.positive else c.danger),
+            Quad(S.cashOnAccounts, formatMoney(cash, "UAH"), "${posted.size} ${S.entriesCountSuffix}", c.textSecondary),
+            Quad(S.revenue, formatMoney(revenue, "UAH"), S.total, c.positive),
+            Quad(S.expenses, formatMoney(expense, "UAH"), S.total, c.danger),
+            Quad(S.netProfit, formatMoney(profit, "UAH"), if (profit >= 0) S.profitWord else S.lossWord, if (profit >= 0) c.positive else c.danger),
         )
         if (isCompact) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -120,13 +123,14 @@ private fun KpiCard(q: Quad, modifier: Modifier = Modifier) {
 @Composable
 private fun PnlCard(revenue: Double, expense: Double, profit: Double) {
     val c = CashpilotColors
+    val S = LocalStrings.current
     QCard(Modifier.fillMaxWidth()) {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("P&L знімок", color = c.textPrimary, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
-            PnlRow("Дохід", formatMoney(revenue, "UAH"), c.positive)
-            PnlRow("Витрати", formatMoney(expense, "UAH"), c.danger)
+            Text(S.pnlSnapshot, color = c.textPrimary, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+            PnlRow(S.revenue, formatMoney(revenue, "UAH"), c.positive)
+            PnlRow(S.expenses, formatMoney(expense, "UAH"), c.danger)
             Box(Modifier.fillMaxWidth().height(1.dp).background(c.border))
-            PnlRow("Чистий прибуток", formatMoney(profit, "UAH"), if (profit >= 0) c.positive else c.danger, bold = true)
+            PnlRow(S.netProfit, formatMoney(profit, "UAH"), if (profit >= 0) c.positive else c.danger, bold = true)
         }
     }
 }
@@ -145,14 +149,15 @@ private fun PnlRow(label: String, value: String, color: Color, bold: Boolean = f
 @Composable
 private fun TasksCard(state: AppState) {
     val c = CashpilotColors
+    val S = LocalStrings.current
     val tbOk = state.trialBalance?.balanced == true
     val bsOk = state.balanceSheet?.balanced == true
     QCard(Modifier.fillMaxWidth()) {
         Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            Text("Стан", color = c.textPrimary, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
-            TaskRow(Icons.Filled.SwapVert, "${state.entries.size} проводок у журналі", "джерело істини", c.heroCyan)
-            TaskRow(Icons.Filled.CalendarMonth, if (tbOk) "Trial balance збалансовано" else "Перевір баланс", "Σ Дт = Σ Кт", if (tbOk) c.positive else c.warning)
-            TaskRow(Icons.Filled.Receipt, if (bsOk) "Баланс зведено" else "Баланс не зведено", "A = L + E", if (bsOk) c.positive else c.warning)
+            Text(S.statusTitle, color = c.textPrimary, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+            TaskRow(Icons.Filled.SwapVert, "${state.entries.size} ${S.entriesInJournal}", S.sourceOfTruth, c.heroCyan)
+            TaskRow(Icons.Filled.CalendarMonth, if (tbOk) S.tbBalancedShort else S.checkBalance, S.sumDtKt, if (tbOk) c.positive else c.warning)
+            TaskRow(Icons.Filled.Receipt, if (bsOk) S.bsBalanced else S.bsNotBalanced, S.aEqLE, if (bsOk) c.positive else c.warning)
         }
     }
 }
@@ -176,21 +181,9 @@ private fun TaskRow(icon: ImageVector, title: String, sub: String, tint: Color) 
 /** Плейсхолдер екрана (Settings) — преміум empty-state. */
 @Composable
 fun PlaceholderScreen(dest: CashpilotDestination) {
+    val S = LocalStrings.current
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.lg)) {
-        SectionTitle(dest.title, "Скоро")
-        com.qlodi.cashpilot.ui.components.EmptyState(Icons.Filled.Settings, dest.title, hintFor(dest))
+        SectionTitle(S.title(dest), S.comingSoon)
+        com.qlodi.cashpilot.ui.components.EmptyState(Icons.Filled.Settings, S.title(dest), S.comingSoon)
     }
-}
-
-private fun hintFor(dest: CashpilotDestination): String = when (dest) {
-    CashpilotDestination.DASHBOARD -> ""
-    CashpilotDestination.CHART_OF_ACCOUNTS -> "Дерево рахунків (Активи/Зобовʼязання/Капітал/Доходи/Витрати), сальдо, пошук."
-    CashpilotDestination.JOURNAL -> "Журнал проводок Дт/Кт з індикатором балансу Σ Дт = Σ Кт. Лише сторно, без edit."
-    CashpilotDestination.BANKING -> "Банк-рахунки, фіди, reconciliation (matching банк ↔ записи)."
-    CashpilotDestination.INVOICES -> "Рахунки клієнтам (AR), статуси, aging, ПДВ-коди."
-    CashpilotDestination.BILLS -> "Рахунки постачальників (AP), графік оплат, OCR-додавання."
-    CashpilotDestination.TAXES -> "ПДВ-коди; UA — транзит 643/644; EU — OSS / reverse charge; податковий календар."
-    CashpilotDestination.REPORTS -> "P&L, Balance Sheet, Cash Flow, Trial Balance, General Ledger."
-    CashpilotDestination.PERIODS -> "Закриття періодів: Open → Soft-close → Locked."
-    CashpilotDestination.SETTINGS -> "Юрисдикція (UA/EU/US), валюта, паки, ролі."
 }

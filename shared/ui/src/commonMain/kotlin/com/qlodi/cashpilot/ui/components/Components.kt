@@ -20,6 +20,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -251,10 +253,63 @@ fun ConfirmDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss, colors = ButtonDefaults.textButtonColors(contentColor = c.textMuted)) {
-                Text("Скасувати", style = MaterialTheme.typography.labelLarge)
+                Text(com.qlodi.cashpilot.ui.i18n.LocalStrings.current.cancel, style = MaterialTheme.typography.labelLarge)
             }
         },
     )
+}
+
+/* ───────────── settings rows (стиль frc-personal) ───────────── */
+
+@Composable
+fun SectionLabel(text: String) {
+    Text(
+        text.uppercase(),
+        color = CashpilotColors.textMuted,
+        style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 0.08.em),
+        modifier = Modifier.padding(start = Spacing.xs, top = Spacing.sm, bottom = Spacing.xs),
+    )
+}
+
+@Composable
+fun SettingsRow(
+    icon: ImageVector,
+    label: String,
+    modifier: Modifier = Modifier,
+    trailingText: String? = null,
+    showChevron: Boolean = false,
+    tint: Color = CashpilotColors.textSecondary,
+    onClick: (() -> Unit)? = null,
+    trailing: (@Composable () -> Unit)? = null,
+) {
+    val c = CashpilotColors
+    Row(
+        modifier
+            .fillMaxWidth()
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .heightIn(min = 56.dp)
+            .padding(horizontal = Spacing.lg, vertical = Spacing.md),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            Modifier.size(34.dp).clip(RoundedCornerShape(Radii.sm)).background(c.surfaceHigh),
+            contentAlignment = Alignment.Center,
+        ) { Icon(icon, null, tint = tint, modifier = Modifier.size(18.dp)) }
+        Spacer(Modifier.width(Spacing.md))
+        Text(label, color = if (tint == c.danger) c.danger else c.textPrimary, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+        if (trailing != null) trailing()
+        if (trailingText != null) Text(trailingText, color = c.textMuted, style = MaterialTheme.typography.bodyMedium)
+        if (showChevron) {
+            Spacer(Modifier.width(Spacing.sm))
+            Icon(Icons.Filled.ChevronRight, null, tint = c.textMuted, modifier = Modifier.size(20.dp))
+        }
+    }
+}
+
+/** Роздільник між рядками в картці. */
+@Composable
+fun RowDivider() {
+    Box(Modifier.fillMaxWidth().padding(start = 62.dp).height(1.dp).background(CashpilotColors.border))
 }
 
 /* ───────────── floating bottom nav (1:1 frc-personal docked pill) ───────────── */

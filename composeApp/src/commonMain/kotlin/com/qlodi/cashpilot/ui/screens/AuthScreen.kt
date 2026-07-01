@@ -15,6 +15,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.qlodi.cashpilot.AppState
+import com.qlodi.cashpilot.ui.i18n.LocalStrings
+import com.qlodi.cashpilot.ui.i18n.errorText
 import com.qlodi.cashpilot.ui.components.QPrimaryButton
 import com.qlodi.cashpilot.ui.components.QTextField
 import com.qlodi.cashpilot.ui.components.QTextLinkButton
@@ -26,6 +28,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun AuthScreen(state: AppState) {
     val c = CashpilotColors
+    val S = LocalStrings.current
     val scope = rememberCoroutineScope()
     var register by remember { mutableStateOf(false) }
     var email by remember { mutableStateOf("") }
@@ -53,26 +56,26 @@ fun AuthScreen(state: AppState) {
                 Spacer(Modifier.width(Spacing.md))
                 Column {
                     Text("Qlodi CashPilot", color = c.textPrimary, style = MaterialTheme.typography.titleMedium)
-                    Text("облік для фаундерів", color = c.textMuted, style = MaterialTheme.typography.bodySmall)
+                    Text(S.founderTag, color = c.textMuted, style = MaterialTheme.typography.bodySmall)
                 }
             }
             Spacer(Modifier.height(Spacing.xs))
-            Text(if (register) "Створити акаунт" else "Вхід", color = c.textPrimary, style = MaterialTheme.typography.headlineSmall)
+            Text(if (register) S.createAccountTitle else S.signIn, color = c.textPrimary, style = MaterialTheme.typography.headlineSmall)
 
-            if (register) QTextField(name, { name = it }, "Імʼя", placeholder = "Alex Kovalenko")
-            QTextField(email, { email = it }, "Email", keyboardType = KeyboardType.Email, placeholder = "you@email.com")
-            QTextField(password, { password = it }, "Пароль", password = true, keyboardType = KeyboardType.Password)
+            if (register) QTextField(name, { name = it }, S.name, placeholder = S.nameHint)
+            QTextField(email, { email = it }, S.email, keyboardType = KeyboardType.Email, placeholder = "you@email.com")
+            QTextField(password, { password = it }, S.password, password = true, keyboardType = KeyboardType.Password)
 
-            state.error?.let { Text(it, color = c.danger, style = MaterialTheme.typography.bodyMedium) }
+            state.error?.let { Text(S.errorText(it), color = c.danger, style = MaterialTheme.typography.bodyMedium) }
 
             QPrimaryButton(
-                text = if (state.busy) "…" else if (register) "Створити" else "Увійти",
+                text = if (state.busy) "…" else if (register) S.createBtn else S.loginBtn,
                 onClick = ::submit, enabled = !state.busy,
                 modifier = Modifier.fillMaxWidth(),
             )
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-                Text(if (register) "Вже є акаунт?" else "Немає акаунта?", color = c.textMuted, style = MaterialTheme.typography.bodyMedium)
-                QTextLinkButton(if (register) "Увійти" else "Реєстрація", onClick = { register = !register; state.error = null })
+                Text(if (register) S.haveAccount else S.noAccount, color = c.textMuted, style = MaterialTheme.typography.bodyMedium)
+                QTextLinkButton(if (register) S.goLogin else S.goRegister, onClick = { register = !register; state.error = null })
             }
         }
     }

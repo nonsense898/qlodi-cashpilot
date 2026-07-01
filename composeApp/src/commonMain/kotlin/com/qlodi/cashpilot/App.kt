@@ -49,6 +49,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.qlodi.cashpilot.ui.components.PillNavBar
 import com.qlodi.cashpilot.ui.components.PillNavItem
+import com.qlodi.cashpilot.ui.i18n.AppLanguage
+import com.qlodi.cashpilot.ui.i18n.LocalLanguage
+import com.qlodi.cashpilot.ui.i18n.LocalStrings
+import com.qlodi.cashpilot.ui.i18n.stringsFor
+import com.qlodi.cashpilot.ui.i18n.title
 import com.qlodi.cashpilot.ui.nav.CashpilotDestination
 import com.qlodi.cashpilot.ui.screens.AuthScreen
 import com.qlodi.cashpilot.ui.screens.BankingScreen
@@ -60,6 +65,7 @@ import com.qlodi.cashpilot.ui.screens.JournalScreen
 import com.qlodi.cashpilot.ui.screens.PeriodsScreen
 import com.qlodi.cashpilot.ui.screens.PlaceholderScreen
 import com.qlodi.cashpilot.ui.screens.ReportsScreen
+import com.qlodi.cashpilot.ui.screens.SettingsScreen
 import com.qlodi.cashpilot.ui.screens.TaxesScreen
 import com.qlodi.cashpilot.ui.theme.CashpilotColors
 import com.qlodi.cashpilot.ui.theme.CashpilotTheme
@@ -69,6 +75,10 @@ import com.qlodi.cashpilot.ui.theme.Motion
 @Composable
 fun App() = CashpilotTheme {
     val state = remember { AppState() }
+    CompositionLocalProvider(
+        LocalStrings provides stringsFor(state.language),
+        LocalLanguage provides state.language,
+    ) {
     Box(Modifier.fillMaxSize().background(CashpilotColors.background)) {
         Crossfade(targetState = state.loggedIn, animationSpec = Motion.emphasized(), label = "auth-gate") { loggedIn ->
             if (!loggedIn) {
@@ -82,6 +92,7 @@ fun App() = CashpilotTheme {
                 }
             }
         }
+    }
     }
 }
 
@@ -106,7 +117,7 @@ private fun ScreenContent(dest: CashpilotDestination, state: AppState, isCompact
     CashpilotDestination.TAXES -> TaxesScreen(state)
     CashpilotDestination.REPORTS -> ReportsScreen(state)
     CashpilotDestination.PERIODS -> PeriodsScreen(state)
-    CashpilotDestination.SETTINGS -> PlaceholderScreen(dest)
+    CashpilotDestination.SETTINGS -> SettingsScreen(state)
 }
 
 /* ───────────────── Desktop ───────────────── */
@@ -131,17 +142,18 @@ private fun DesktopShell(state: AppState) {
 @Composable
 private fun NavRail(current: CashpilotDestination, onSelect: (CashpilotDestination) -> Unit, state: AppState) {
     val c = CashpilotColors
+    val s = LocalStrings.current
     Column(
-        Modifier.fillMaxHeight().width(252.dp).background(c.surface).padding(16.dp).verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+        Modifier.fillMaxHeight().width(252.dp).background(c.surface).padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(3.dp),
     ) {
         BrandHeader(state)
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(20.dp))
         CashpilotDestination.entries.forEach { dest ->
-            NavRailItem(dest.icon, dest.title, selected = dest == current) { onSelect(dest) }
+            NavRailItem(dest.icon, s.title(dest), selected = dest == current) { onSelect(dest) }
         }
-        Spacer(Modifier.height(8.dp))
-        NavRailItem(Icons.Filled.Logout, "Вийти", selected = false) { state.logout() }
+        Spacer(Modifier.weight(1f))
+        RailProfileCard(state) { onSelect(CashpilotDestination.SETTINGS) }
     }
 }
 
@@ -149,15 +161,35 @@ private fun NavRail(current: CashpilotDestination, onSelect: (CashpilotDestinati
 private fun NavRailItem(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, selected: Boolean, onClick: () -> Unit) {
     val c = CashpilotColors
     Row(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp))
-            .background(if (selected) c.surfaceElevated else c.surface)
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
+            .background(if (selected) c.accentDim else androidx.compose.ui.graphics.Color.Transparent)
             .clickable(onClick = onClick).padding(horizontal = 12.dp, vertical = 11.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(icon, title, tint = if (selected) c.heroCyan else c.textSecondary, modifier = Modifier.size(18.dp))
         Spacer(Modifier.width(12.dp))
-        Text(title, color = if (selected) c.textPrimary else c.textSecondary,
+        Text(title, color = if (selected) c.heroCyan else c.textSecondary,
             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal, fontSize = 14.sp)
+    }
+}
+
+/** Нижня профіль-картка в rail (як у frc-personal). */
+@Composable
+private fun RailProfileCard(state: AppState, onClick: () -> Unit) {
+    val c = CashpilotColors
+    Row(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(c.surfaceElevated)
+            .clickable(onClick = onClick).padding(10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(Modifier.size(34.dp).clip(RoundedCornerShape(10.dp)).background(c.heroCyan), contentAlignment = Alignment.Center) {
+            Text((state.entity?.name?.firstOrNull() ?: 'C').uppercase(), color = c.onAccent, fontWeight = FontWeight.ExtraBold, fontSize = 15.sp)
+        }
+        Spacer(Modifier.width(10.dp))
+        Column(Modifier.weight(1f)) {
+            Text(state.entity?.name ?: "CashPilot", color = c.textPrimary, fontWeight = FontWeight.SemiBold, fontSize = 13.sp, maxLines = 1)
+            Text(state.entity?.let { "${it.jurisdiction} · ${it.functionalCurrency}" } ?: "—", color = c.textMuted, fontSize = 11.sp)
+        }
     }
 }
 
@@ -172,6 +204,7 @@ private val PrimaryTabs = listOf(
 
 @Composable
 private fun MobileShell(state: AppState) {
+    val s = LocalStrings.current
     var current by remember { mutableStateOf(CashpilotDestination.DASHBOARD) }
     var showMore by remember { mutableStateOf(false) }
 
@@ -189,11 +222,11 @@ private fun MobileShell(state: AppState) {
         }
         PillNavBar(Modifier.align(Alignment.BottomCenter).fillMaxWidth().navigationBarsPadding().padding(start = 20.dp, end = 20.dp, bottom = 8.dp)) {
             PrimaryTabs.forEach { (dest, icon) ->
-                PillNavItem(icon, dest.title.substringBefore(" "), active = !showMore && current == dest) {
+                PillNavItem(icon, s.title(dest).substringBefore(" "), active = !showMore && current == dest) {
                     current = dest; showMore = false
                 }
             }
-            PillNavItem(Icons.Filled.Apps, "More", active = showMore) { showMore = true }
+            PillNavItem(Icons.Filled.Apps, s.navMore, active = showMore) { showMore = true }
         }
     }
 }
@@ -201,12 +234,13 @@ private fun MobileShell(state: AppState) {
 @Composable
 private fun MoreList(current: CashpilotDestination, state: AppState, onSelect: (CashpilotDestination) -> Unit) {
     val c = CashpilotColors
+    val s = LocalStrings.current
     val rest = CashpilotDestination.entries.filter { d -> PrimaryTabs.none { it.first == d } }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("More", color = c.textPrimary, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+        Text(s.navMore, color = c.textPrimary, fontSize = 22.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(4.dp))
-        rest.forEach { dest -> MoreRow(dest.icon, dest.title, dest == current) { onSelect(dest) } }
-        MoreRow(Icons.Filled.Logout, "Вийти", false) { state.logout() }
+        rest.forEach { dest -> MoreRow(dest.icon, s.title(dest), dest == current) { onSelect(dest) } }
+        MoreRow(Icons.Filled.Logout, s.navLogout, false) { state.logout() }
     }
 }
 

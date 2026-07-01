@@ -4,6 +4,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.qlodi.cashpilot.data.api.*
+import com.qlodi.cashpilot.ui.i18n.AppLanguage
+import com.qlodi.cashpilot.ui.util.LocaleConfig
 
 /**
  * Стан застосунку CashPilot: auth + поточний entity + дані леджера на живому API.
@@ -12,6 +14,7 @@ import com.qlodi.cashpilot.data.api.*
 class AppState {
     val api = CashpilotApi()
 
+    var language by mutableStateOf(AppLanguage.Ukrainian); private set
     var loggedIn by mutableStateOf(SessionStore.isLoggedIn); private set
     var busy by mutableStateOf(false); private set
     var error by mutableStateOf<String?>(null)
@@ -28,7 +31,15 @@ class AppState {
 
     init {
         ApiConfig.onUnauthorized = { logout() }
+        LocaleConfig.locale = language.code
     }
+
+    fun setLanguage(lang: AppLanguage) {
+        language = lang
+        LocaleConfig.locale = lang.code
+    }
+
+    fun toggleLanguage() = setLanguage(if (language == AppLanguage.Ukrainian) AppLanguage.English else AppLanguage.Ukrainian)
 
     suspend fun login(email: String, password: String) = auth { api.login(email, password) }
     suspend fun register(email: String, password: String, name: String?) = auth { api.register(email, password, name) }
@@ -95,9 +106,14 @@ class AppState {
         trialBalance = null; balanceSheet = null
     }
 
-    private fun friendly(e: ApiException): String = when {
-        e.status == 401 || e.code == "invalid_credentials" -> "Невірний email або пароль"
-        e.status == 0 -> "Немає звʼязку з сервером"
-        else -> e.message
+    // Повертаємо КОД помилки (UI локалізує через CashStrings.errorText); невідоме — raw-меседж.
+    private fun friendly(e: ApiException): String {
+        val code = e.code
+        return when {
+            e.status == 401 || code == "invalid_credentials" -> "wrong_credentials"
+            code != null && code in setOf("unbalanced", "period_locked", "too_few_lines") -> code
+            e.status == 0 -> "no_connection"
+            else -> e.message
+        }
     }
 }
