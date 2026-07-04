@@ -47,6 +47,7 @@ class CashStrings {
     // banking
     var cashPosition = ""; var totalOnAccounts = ""; var reconSoon = ""; var noCashAccounts = ""; var noCashAccountsSub = ""
     var importStatement = ""; var unreconciled = ""; var noBankTxns = ""; var reconcileBtn = ""; var chooseCounter = ""; var importedFmt = ""
+    var csvNoRows = ""; var csvSkippedFmt = ""
     // taxes
     var taxesSub = ""; var vatToPayNet = ""; var vatEngineSoon = ""
     var vat643 = ""; var vat6411 = ""; var vat644 = ""
@@ -97,6 +98,8 @@ private fun en() = CashStrings().apply {
     cashPosition = "Cash position"; totalOnAccounts = "Total on accounts"; reconSoon = "Reconciliation (bank feeds) — next step."
     noCashAccounts = "No accounts"; noCashAccountsSub = "Cash accounts will appear from the chart of accounts."
     importStatement = "Import CSV"; unreconciled = "Unreconciled"; noBankTxns = "No transactions to reconcile"; reconcileBtn = "Reconcile"; chooseCounter = "Counter-account"; importedFmt = "Imported"
+    csvNoRows = "No rows recognized in the file. Expected columns: date, amount, description (date as 2026-06-30 or 30.06.2026)."
+    csvSkippedFmt = "skipped"
     taxesSub = "VAT 20% · 643/644 transit"; vatToPayNet = "VAT to pay (net)"; vatEngineSoon = "UA-VAT-20 · 14 · 7 · 0 · exempt · NA — full engine next."
     vat643 = "643 Output VAT liability"; vat6411 = "6411 VAT settlements"; vat644 = "644 Input VAT credit"
     periodsSub = "Period close / lock"; noPeriods = "No periods"; noPeriodsSub = "They appear after the first entry."
@@ -144,6 +147,8 @@ private fun uk() = CashStrings().apply {
     cashPosition = "Грошова позиція"; totalOnAccounts = "Усього на рахунках"; reconSoon = "Reconciliation (фіди банку) — наступний крок."
     noCashAccounts = "Немає рахунків"; noCashAccountsSub = "Грошові рахунки зʼявляться з плану рахунків."
     importStatement = "Імпорт CSV"; unreconciled = "Не звірено"; noBankTxns = "Немає транзакцій для звірки"; reconcileBtn = "Звірити"; chooseCounter = "Контр-рахунок"; importedFmt = "Імпортовано"
+    csvNoRows = "У файлі не розпізнано жодного рядка. Очікувані колонки: дата, сума, опис (дата у форматі 2026-06-30 або 30.06.2026)."
+    csvSkippedFmt = "пропущено"
     taxesSub = "ПДВ 20% · транзит 643/644"; vatToPayNet = "ПДВ до сплати (нетто)"; vatEngineSoon = "UA-VAT-20 · 14 · 7 · 0 · exempt · NA — повний рушій далі."
     vat643 = "643 Податкові зобовʼязання (output)"; vat6411 = "6411 Розрахунки за ПДВ"; vat644 = "644 Податковий кредит (input)"
     periodsSub = "Закриття / лок періодів"; noPeriods = "Немає періодів"; noPeriodsSub = "Зʼявляться після першої проводки."

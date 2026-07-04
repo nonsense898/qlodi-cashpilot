@@ -57,8 +57,9 @@ data class JournalEntry(
     val memo: String? = null,
 )
 
-/** Джерело проводки (для provenance / immutability-cue в UI). */
-enum class EntrySource { MANUAL, BANK, AR, AP, PAYROLL, CLOSING, REVERSING }
+/** Джерело проводки (для provenance / immutability-cue в UI).
+ *  Значення мають лишатися синхронними з бекендом (app.qlodi.model.EntrySource) та API-DTO. */
+enum class EntrySource { MANUAL, AR, AP, BANK, PAYROLL, FX, CLOSING, REVERSAL, OPENING }
 
 /** Обліковий період entity. */
 @Serializable

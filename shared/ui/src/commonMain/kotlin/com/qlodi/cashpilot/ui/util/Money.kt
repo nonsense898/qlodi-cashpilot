@@ -54,6 +54,19 @@ fun filterDecimalInput(raw: String): String {
     return sb.toString()
 }
 
+/** Округлює суму до копійок (2 знаки). Двигун леджера вимагає Σ Дт == Σ Кт побайтово,
+ *  тож усі суми документів округлюються ДО відправки, а не на бекенді. */
+fun roundMoney(v: Double): Double = (v * 100).roundToLong() / 100.0
+
+/** Сума як рядок з рівно двома знаками ("120.01"), без наукової нотації —
+ *  формат, який бекенд парсить у BigDecimal без повторного округлення. */
+fun moneyString(v: Double): String {
+    val cents = (v * 100).roundToLong()
+    val sign = if (cents < 0) "-" else ""
+    val a = abs(cents)
+    return "$sign${a / 100}.${(a % 100).toString().padStart(2, '0')}"
+}
+
 /** Фільтр вводу для дати: лише цифри й `-`, максимум 10 символів (yyyy-MM-dd). */
 fun filterDateInput(raw: String): String = raw.filter { it.isDigit() || it == '-' }.take(10)
 

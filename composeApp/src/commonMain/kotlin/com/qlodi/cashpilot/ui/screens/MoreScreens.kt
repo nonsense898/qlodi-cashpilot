@@ -28,6 +28,7 @@ import com.qlodi.cashpilot.ui.i18n.AppLanguage
 import com.qlodi.cashpilot.ui.i18n.LocalLanguage
 import com.qlodi.cashpilot.ui.i18n.LocalStrings
 import com.qlodi.cashpilot.ui.i18n.accountName
+import com.qlodi.cashpilot.ui.i18n.errorText
 import com.qlodi.cashpilot.ui.components.*
 import com.qlodi.cashpilot.ui.theme.CashpilotColors
 import com.qlodi.cashpilot.ui.theme.Radii
@@ -38,6 +39,8 @@ import com.qlodi.cashpilot.ui.util.filterDateInput
 import com.qlodi.cashpilot.ui.util.filterDecimalInput
 import com.qlodi.cashpilot.ui.util.formatMoney
 import com.qlodi.cashpilot.ui.util.parseAmount
+import com.qlodi.cashpilot.ui.util.roundMoney
+import com.qlodi.cashpilot.ui.util.moneyString
 import kotlinx.coroutines.launch
 
 private fun amt(s: String) = s.toDoubleOrNull() ?: 0.0
@@ -64,10 +67,22 @@ fun BankingScreen(state: AppState) {
     val total = cash.sumOf { balanceOf(state, it) }
     val bankAcc = state.accBySub("BANK") ?: cash.firstOrNull()
     var reconcileTxn by remember { mutableStateOf<BankTxnView?>(null) }
+    var importMsg by remember { mutableStateOf<String?>(null) }
+    var importFailed by remember { mutableStateOf(false) }
     val picker = rememberCsvPickerState { text ->
         if (text != null && bankAcc != null) {
-            val rows = parseBankCsv(text).map { BankTxnImport(it.first, it.second, it.third) }
-            if (rows.isNotEmpty()) scope.launch { state.importBank(bankAcc.id, rows) }
+            val parsed = parseBankCsv(text)
+            val rows = parsed.rows.map { BankTxnImport(it.first, it.second, it.third) }
+            if (rows.isEmpty()) {
+                importFailed = true; importMsg = S.csvNoRows
+            } else scope.launch {
+                val err = state.importBank(bankAcc.id, rows)
+                importFailed = err != null
+                importMsg = err?.let { S.errorText(it) } ?: buildString {
+                    append("${S.importedFmt}: ${rows.size}")
+                    if (parsed.skipped > 0) append(" · ${S.csvSkippedFmt}: ${parsed.skipped}")
+                }
+            }
         }
     }
 
@@ -76,6 +91,9 @@ fun BankingScreen(state: AppState) {
             SectionTitle(S.navBanking, S.cashPosition)
             Spacer(Modifier.weight(1f))
             if (bankAcc != null) QTonalButton(S.importStatement, { picker.pick() })
+        }
+        importMsg?.let {
+            Text(it, color = if (importFailed) c.danger else c.positive, style = MaterialTheme.typography.bodySmall)
         }
         if (cash.isEmpty()) { EmptyState(Icons.Filled.AccountBalance, S.noCashAccounts, S.noCashAccountsSub); return@Column }
         QCard(Modifier.fillMaxWidth()) {
@@ -254,9 +272,9 @@ fun InvoicesScreen(state: AppState) {
     val vatAcc = state.accBySub("VAT_OUTPUT_TRANSIT")
     val total = net + vat
     val lines = buildList {
-        add(JournalLineRequest(ar.id, Direction.DEBIT, total.toString()))
-        add(JournalLineRequest(rev.id, Direction.CREDIT, net.toString()))
-        if (vat > 0 && vatAcc != null) add(JournalLineRequest(vatAcc.id, Direction.CREDIT, vat.toString()))
+        add(JournalLineRequest(ar.id, Direction.DEBIT, moneyString(total)))
+        add(JournalLineRequest(rev.id, Direction.CREDIT, moneyString(net)))
+        if (vat > 0 && vatAcc != null) add(JournalLineRequest(vatAcc.id, Direction.CREDIT, moneyString(vat)))
     }
     state.post(PostEntryRequest(entryDate = date, description = "${S.invoiceBtn} · $who", source = EntrySource.AR, lines = lines))
 }
@@ -275,9 +293,9 @@ fun BillsScreen(state: AppState) {
     val vatAcc = state.accBySub("VAT_INPUT_TRANSIT")
     val total = net + vat
     val lines = buildList {
-        add(JournalLineRequest(exp.id, Direction.DEBIT, net.toString()))
-        if (vat > 0 && vatAcc != null) add(JournalLineRequest(vatAcc.id, Direction.DEBIT, vat.toString()))
-        add(JournalLineRequest(ap.id, Direction.CREDIT, total.toString()))
+        add(JournalLineRequest(exp.id, Direction.DEBIT, moneyString(net)))
+        if (vat > 0 && vatAcc != null) add(JournalLineRequest(vatAcc.id, Direction.DEBIT, moneyString(vat)))
+        add(JournalLineRequest(ap.id, Direction.CREDIT, moneyString(total)))
     }
     state.post(PostEntryRequest(entryDate = date, description = "${S.billBtn} · $who", source = EntrySource.AP, lines = lines))
 }
@@ -330,8 +348,8 @@ private fun DocForm(counterpartyLabel: String, onSubmit: (String, String, Double
     var who by remember { mutableStateOf("") }
     var net by remember { mutableStateOf("") }
     var vatRate by remember { mutableStateOf(20) }   // 20/14/7/0 %, -1 = звільнено
-    val netD = parseAmount(net)
-    val vat = if (vatRate > 0) netD * vatRate / 100.0 else 0.0
+    val netD = roundMoney(parseAmount(net))
+    val vat = if (vatRate > 0) roundMoney(netD * vatRate / 100.0) else 0.0
 
     QCard(Modifier.fillMaxWidth()) {
         Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
