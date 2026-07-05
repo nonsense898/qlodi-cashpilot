@@ -2,6 +2,7 @@ package com.qlodi.cashpilot.data.api
 
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
+import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
@@ -86,4 +87,24 @@ class CashpilotApi(private val tokenProvider: TokenProvider = SessionStore) {
 
     suspend fun yearEndClose(eid: String): ApiResult<JournalEntryView> =
         apiCall { client.post(ApiConfig.url("/ledger/entities/$eid/periods/year-end-close")) }
+
+    /* ── Податковий движок: ПДВ (Фаза 2) ── */
+    suspend fun vatReport(eid: String, from: String, to: String): ApiResult<VatReportView> =
+        apiCall { client.get(ApiConfig.url("/ledger/entities/$eid/reports/vat")) { parameter("from", from); parameter("to", to) } }
+
+    /* ── UA Payroll (Фаза 2) ── */
+    suspend fun listEmployees(eid: String): ApiResult<List<Employee>> =
+        apiCall { client.get(ApiConfig.url("/ledger/entities/$eid/payroll/employees")) }
+
+    suspend fun saveEmployee(eid: String, e: Employee): ApiResult<Employee> =
+        apiCall { client.post(ApiConfig.url("/ledger/entities/$eid/payroll/employees")) { setBody(e) } }
+
+    suspend fun deactivateEmployee(eid: String, id: String): ApiResult<Unit> =
+        apiCall { client.delete(ApiConfig.url("/ledger/entities/$eid/payroll/employees/$id")) }
+
+    suspend fun listPayrollRuns(eid: String): ApiResult<List<PayrollRun>> =
+        apiCall { client.get(ApiConfig.url("/ledger/entities/$eid/payroll/runs")) }
+
+    suspend fun runPayroll(eid: String, period: String): ApiResult<PayrollRun> =
+        apiCall { client.post(ApiConfig.url("/ledger/entities/$eid/payroll/runs")) { setBody(RunPayrollRequest(period)) } }
 }

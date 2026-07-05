@@ -41,6 +41,7 @@ import com.qlodi.cashpilot.ui.util.formatMoney
 import com.qlodi.cashpilot.ui.util.parseAmount
 import com.qlodi.cashpilot.ui.util.roundMoney
 import com.qlodi.cashpilot.ui.util.moneyString
+import com.qlodi.cashpilot.ui.util.todayIsoDate
 import kotlinx.coroutines.launch
 
 private fun amt(s: String) = s.toDoubleOrNull() ?: 0.0
@@ -174,28 +175,170 @@ private fun CounterAccountDialog(accounts: List<AccountView>, uk: Boolean, title
 fun TaxesScreen(state: AppState) {
     val c = CashpilotColors
     val S = LocalStrings.current
-    val payable = state.accBySub("VAT_PAYABLE")?.let { balanceOf(state, it) } ?: 0.0
-    val outTransit = state.accBySub("VAT_OUTPUT_TRANSIT")?.let { balanceOf(state, it) } ?: 0.0
-    val inTransit = state.accBySub("VAT_INPUT_TRANSIT")?.let { balanceOf(state, it) } ?: 0.0
-    val net = outTransit + payable - inTransit
+    // Серверний ПДВ-звіт (Фаза 2): обороти за поточний місяць + сальдо 6411/643/644.
+    var report by remember { mutableStateOf<VatReportView?>(null) }
+    LaunchedEffect(state.entity?.id, state.entries.size) {
+        state.entity?.let { e ->
+            val today = todayIsoDate()
+            report = state.api.vatReport(e.id, today.take(7) + "-01", today).getOrNull()
+        }
+    }
+    val r = report
+    val payable = r?.balanceVatPayable?.toDoubleOrNull()
+        ?: state.accBySub("VAT_PAYABLE")?.let { balanceOf(state, it) } ?: 0.0
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.lg)) {
         SectionTitle(S.navTaxes, S.taxesSub)
         QCard(Modifier.fillMaxWidth()) {
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
                 Text(S.vatToPayNet, color = c.textMuted, style = MaterialTheme.typography.bodyMedium)
-                NumberText(formatMoneyUah(net), size = 28, color = if (net > 0) c.warning else c.positive)
+                NumberText(formatMoneyUah(payable), size = 28, color = if (payable > 0) c.warning else c.positive)
             }
         }
-        QCard(Modifier.fillMaxWidth()) {
-            Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
-                VatRow(S.vat643, outTransit)
-                VatRow(S.vat6411, payable)
-                VatRow(S.vat644, -inTransit)
+        if (r != null) {
+            QCard(Modifier.fillMaxWidth()) {
+                Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
+                    Text("${r.from} → ${r.to}", color = c.textMuted, style = MaterialTheme.typography.labelMedium)
+                    VatRow(S.vatPeriodOutput, r.outputVat.toDoubleOrNull() ?: 0.0)
+                    VatRow(S.vatPeriodInput, -(r.inputVat.toDoubleOrNull() ?: 0.0))
+                    VatRow(S.vatPeriodDue, r.netDue.toDoubleOrNull() ?: 0.0)
+                }
+            }
+            QCard(Modifier.fillMaxWidth()) {
+                Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
+                    VatRow(S.vat643, r.transitOutput643.toDoubleOrNull() ?: 0.0)
+                    VatRow(S.vat6411, r.balanceVatPayable.toDoubleOrNull() ?: 0.0)
+                    VatRow(S.vat644, r.transitInput644.toDoubleOrNull() ?: 0.0)
+                }
             }
         }
-        Text(S.vatEngineSoon, color = c.textMuted, style = MaterialTheme.typography.bodySmall)
+        Text(S.vatDeclarationHint, color = c.textMuted, style = MaterialTheme.typography.bodySmall)
         Spacer(Modifier.height(Spacing.huge))
     }
+}
+
+/* ───────────── UA Payroll (Фаза 2, doc_05) ───────────── */
+
+@Composable
+fun PayrollScreen(state: AppState) {
+    val c = CashpilotColors
+    val S = LocalStrings.current
+    val scope = rememberCoroutineScope()
+    var employees by remember { mutableStateOf<List<Employee>>(emptyList()) }
+    var runs by remember { mutableStateOf<List<PayrollRun>>(emptyList()) }
+    var adding by remember { mutableStateOf(false) }
+    var msg by remember { mutableStateOf<String?>(null) }
+
+    suspend fun reload() {
+        state.entity?.let { e ->
+            employees = state.api.listEmployees(e.id).getOrNull().orEmpty().filter { it.active }
+            runs = state.api.listPayrollRuns(e.id).getOrNull().orEmpty()
+        }
+    }
+    LaunchedEffect(state.entity?.id) { reload() }
+
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.lg)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            SectionTitle("Payroll", S.payrollSub)
+            Spacer(Modifier.weight(1f))
+            QTonalButton(S.addEmployee, { adding = true })
+        }
+        msg?.let { Text(it, color = c.positive, style = MaterialTheme.typography.bodySmall) }
+
+        // ── Працівники ──
+        Text("${S.employeesTitle} · ${employees.size}", color = c.textSecondary, style = MaterialTheme.typography.titleSmall)
+        if (employees.isEmpty()) Text(S.noEmployees, color = c.textMuted, style = MaterialTheme.typography.bodySmall)
+        employees.forEach { e ->
+            QCard(Modifier.fillMaxWidth()) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text(e.fullName, color = c.textPrimary, style = MaterialTheme.typography.bodyLarge)
+                        Text(
+                            "${formatMoneyUah(e.monthlySalary)}${if (e.diiaCity) " · Дія City" else ""}",
+                            color = c.textMuted, style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                    QTextLinkButton("✕", onClick = {
+                        scope.launch { state.api.deactivateEmployee(state.entity!!.id, e.id); reload() }
+                    })
+                }
+            }
+        }
+        if (adding) {
+            var name by remember { mutableStateOf("") }
+            var salary by remember { mutableStateOf("") }
+            var diia by remember { mutableStateOf(false) }
+            QCard(Modifier.fillMaxWidth()) {
+                Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
+                    QTextField(name, { name = it }, S.empName, Modifier.fillMaxWidth())
+                    QTextField(salary, { salary = filterDecimalInput(it) }, S.empSalary, Modifier.fillMaxWidth(), keyboardType = KeyboardType.Decimal)
+                    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                        FilterChip(
+                            selected = diia, onClick = { diia = !diia }, label = { Text(S.empDiia) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = c.heroCyan.copy(alpha = 0.16f), selectedLabelColor = c.heroCyan,
+                                containerColor = c.surfaceHigh, labelColor = c.textMuted,
+                            ),
+                        )
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                        QPrimaryButton(S.post, onClick = {
+                            val sal = parseAmount(salary)
+                            scope.launch {
+                                state.api.saveEmployee(
+                                    state.entity!!.id,
+                                    Employee(id = randomEmpId(), fullName = name.trim(), monthlySalary = roundMoney(sal), diiaCity = diia),
+                                )
+                                adding = false; reload()
+                            }
+                        }, enabled = name.isNotBlank() && parseAmount(salary) > 0)
+                        QTextLinkButton("Cancel", onClick = { adding = false })
+                    }
+                }
+            }
+        }
+
+        // ── Нарахування ──
+        if (employees.isNotEmpty()) {
+            QPrimaryButton("${S.runPayrollBtn} · ${todayIsoDate().take(7)}", onClick = {
+                scope.launch {
+                    val r = state.api.runPayroll(state.entity!!.id, todayIsoDate().take(7))
+                    msg = if (r.getOrNull() != null) S.payrollPosted else null
+                    reload()
+                    state.reloadEntries(); state.reloadReports()
+                }
+            }, modifier = Modifier.fillMaxWidth())
+        }
+
+        // ── Історія ──
+        if (runs.isNotEmpty()) {
+            Text(S.payrollRuns, color = c.textSecondary, style = MaterialTheme.typography.titleSmall)
+            runs.forEach { r ->
+                QCard(Modifier.fillMaxWidth()) {
+                    Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+                        Row {
+                            Text(r.period, color = c.heroCyan, style = MaterialTheme.typography.titleSmall)
+                            Spacer(Modifier.weight(1f))
+                            Text(S.payrollPosted, color = c.positive, style = MaterialTheme.typography.labelMedium)
+                        }
+                        Text(
+                            "${S.grossCol} ${r.totalGross} · ПДФО ${r.totalPit} · ВЗ ${r.totalMilitaryLevy} · ЄСВ ${r.totalSsc} · ${S.netCol} ${r.totalNet}",
+                            color = c.textMuted, style = MaterialTheme.typography.bodySmall,
+                        )
+                        r.payslips.forEach { p ->
+                            Text("  ${p.fullName}: ${S.netCol} ${p.net}", color = c.textSecondary, style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                }
+            }
+        }
+        Text(S.payrollValidationNote, color = c.textMuted, style = MaterialTheme.typography.bodySmall)
+        Spacer(Modifier.height(Spacing.huge))
+    }
+}
+
+private fun randomEmpId(): String = buildString {
+    val hex = "0123456789abcdef"
+    repeat(16) { append(hex[kotlin.random.Random.nextInt(16)]) }
 }
 
 @Composable

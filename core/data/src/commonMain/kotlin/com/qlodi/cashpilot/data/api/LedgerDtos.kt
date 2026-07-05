@@ -125,3 +125,45 @@ data class BalanceSheetView(
     val assets: List<BalanceSheetLine>, val liabilities: List<BalanceSheetLine>, val equity: List<BalanceSheetLine>,
     val totalAssets: String, val totalLiabilitiesEquity: String, val balanced: Boolean,
 )
+
+/* ── Податковий движок: ПДВ (Фаза 2) ── */
+@Serializable
+data class VatReportView(
+    val from: String, val to: String,
+    val outputVat: String, val inputVat: String, val netDue: String,
+    val balanceVatPayable: String, val transitOutput643: String, val transitInput644: String,
+)
+
+/* ── UA Payroll (Фаза 2) ── */
+@Serializable
+data class Employee(
+    val id: String,
+    val entityId: String = "",
+    val fullName: String,
+    val taxId: String? = null,
+    val monthlySalary: Double,
+    val employmentType: String = "main",
+    val diiaCity: Boolean = false,
+    val disability: Boolean = false,
+    val active: Boolean = true,
+    val hiredAt: String? = null,
+)
+
+@Serializable
+data class PayslipView(
+    val employeeId: String, val fullName: String,
+    val gross: String, val pit: String, val militaryLevy: String, val net: String,
+    val sscBase: String, val ssc: String, val sscTopUp: String, val employerCost: String,
+)
+
+@Serializable
+data class PayrollRun(
+    val id: String, val entityId: String, val period: String,
+    val status: String = "posted", val journalEntryId: String? = null,
+    val totalGross: String = "0", val totalPit: String = "0", val totalMilitaryLevy: String = "0",
+    val totalSsc: String = "0", val totalNet: String = "0",
+    val payslips: List<PayslipView> = emptyList(), val createdAt: String = "",
+)
+
+@Serializable
+data class RunPayrollRequest(val period: String)

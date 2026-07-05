@@ -8,6 +8,7 @@ import androidx.compose.material.icons.filled.Assessment
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Receipt
+import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.RequestQuote
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SwapVert
@@ -24,6 +25,7 @@ enum class CashpilotDestination(val title: String, val icon: ImageVector) {
     INVOICES("Invoices (AR)", Icons.Filled.Receipt),
     BILLS("Bills (AP)", Icons.Filled.RequestQuote),
     TAXES("Taxes / VAT", Icons.Filled.AccountBalanceWallet),
+    PAYROLL("Payroll", Icons.Filled.Groups),
     REPORTS("Reports", Icons.Filled.Assessment),
     PERIODS("Periods", Icons.Filled.CalendarMonth),
     SETTINGS("Settings", Icons.Filled.Settings),

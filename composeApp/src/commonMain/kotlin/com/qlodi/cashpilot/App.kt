@@ -120,6 +120,7 @@ private fun ScreenContent(dest: CashpilotDestination, state: AppState, isCompact
         CashpilotDestination.INVOICES -> Scrolled(pad) { InvoicesScreen(state) }
         CashpilotDestination.BILLS -> Scrolled(pad) { BillsScreen(state) }
         CashpilotDestination.TAXES -> Scrolled(pad) { TaxesScreen(state) }
+        CashpilotDestination.PAYROLL -> Scrolled(pad) { com.qlodi.cashpilot.ui.screens.PayrollScreen(state) }
         CashpilotDestination.REPORTS -> Scrolled(pad) { ReportsScreen(state) }
         CashpilotDestination.PERIODS -> Scrolled(pad) { PeriodsScreen(state) }
         CashpilotDestination.SETTINGS -> Scrolled(pad) { SettingsScreen(state) }

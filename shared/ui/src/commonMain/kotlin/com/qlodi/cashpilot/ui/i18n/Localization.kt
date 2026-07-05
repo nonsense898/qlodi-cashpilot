@@ -51,6 +51,11 @@ class CashStrings {
     // taxes
     var taxesSub = ""; var vatToPayNet = ""; var vatEngineSoon = ""
     var vat643 = ""; var vat6411 = ""; var vat644 = ""
+    var vatPeriodOutput = ""; var vatPeriodInput = ""; var vatPeriodDue = ""; var vatDeclarationHint = ""
+    // payroll
+    var payrollSub = ""; var employeesTitle = ""; var addEmployee = ""; var empName = ""; var empSalary = ""
+    var empDiia = ""; var runPayrollBtn = ""; var payrollRuns = ""; var noEmployees = ""
+    var grossCol = ""; var netCol = ""; var payrollPosted = ""; var payrollValidationNote = ""
     // periods
     var periodsSub = ""; var noPeriods = ""; var noPeriodsSub = ""
     var pOpen = ""; var pSoftClosed = ""; var pLocked = ""; var lock = ""; var softClose = ""; var reopen = ""
@@ -102,6 +107,13 @@ private fun en() = CashStrings().apply {
     csvSkippedFmt = "skipped"
     taxesSub = "VAT 20% · 643/644 transit"; vatToPayNet = "VAT to pay (net)"; vatEngineSoon = "UA-VAT-20 · 14 · 7 · 0 · exempt · NA — full engine next."
     vat643 = "643 Output VAT liability"; vat6411 = "6411 VAT settlements"; vat644 = "644 Input VAT credit"
+    vatPeriodOutput = "Output VAT (period)"; vatPeriodInput = "Input VAT credit (period)"; vatPeriodDue = "Due for period"
+    vatDeclarationHint = "Monthly VAT return · due by the 20th of the next month"
+    payrollSub = "UA payroll: gross-to-net, PIT/military levy/SSC"; employeesTitle = "Employees"; addEmployee = "Add employee"
+    empName = "Full name"; empSalary = "Monthly salary"; empDiia = "Diia City"
+    runPayrollBtn = "Run payroll"; payrollRuns = "Payroll runs"; noEmployees = "No employees yet"
+    grossCol = "Gross"; netCol = "Net"; payrollPosted = "Posted to ledger"
+    payrollValidationNote = "2026 rates are pack config — validate with a licensed accountant before filing"
     periodsSub = "Period close / lock"; noPeriods = "No periods"; noPeriodsSub = "They appear after the first entry."
     pOpen = "OPEN"; pSoftClosed = "SOFT-CLOSED"; pLocked = "LOCKED"; lock = "Lock"; softClose = "Soft-close"; reopen = "Reopen"
     invoicesSub = "Customer invoices · revenue + VAT"; client = "Client"; invoiceBtn = "Invoice"; noInvoices = "No invoices"
@@ -151,6 +163,13 @@ private fun uk() = CashStrings().apply {
     csvSkippedFmt = "пропущено"
     taxesSub = "ПДВ 20% · транзит 643/644"; vatToPayNet = "ПДВ до сплати (нетто)"; vatEngineSoon = "UA-VAT-20 · 14 · 7 · 0 · exempt · NA — повний рушій далі."
     vat643 = "643 Податкові зобовʼязання (output)"; vat6411 = "6411 Розрахунки за ПДВ"; vat644 = "644 Податковий кредит (input)"
+    vatPeriodOutput = "ПЗ за період"; vatPeriodInput = "Податковий кредит за період"; vatPeriodDue = "До сплати за період"
+    vatDeclarationHint = "Декларація з ПДВ — місячна · до 20 числа наступного місяця"
+    payrollSub = "Зарплата UA: gross-to-net, ПДФО/ВЗ/ЄСВ"; employeesTitle = "Працівники"; addEmployee = "Додати працівника"
+    empName = "ПІБ"; empSalary = "Оклад, грн"; empDiia = "Дія City"
+    runPayrollBtn = "Нарахувати зарплату"; payrollRuns = "Розрахункові цикли"; noEmployees = "Працівників ще немає"
+    grossCol = "Gross"; netCol = "На руки"; payrollPosted = "Проведено в леджер"
+    payrollValidationNote = "Ставки 2026 — конфіг паку; перед звітністю валідуйте з бухгалтером"
     periodsSub = "Закриття / лок періодів"; noPeriods = "Немає періодів"; noPeriodsSub = "Зʼявляться після першої проводки."
     pOpen = "Відкритий"; pSoftClosed = "Мʼяке закр."; pLocked = "Заблокований"; lock = "Заблокувати"; softClose = "Мʼяке закриття"; reopen = "Відкрити"
     invoicesSub = "Рахунки клієнтам · дохід + ПДВ"; client = "Клієнт"; invoiceBtn = "Інвойс"; noInvoices = "Немає інвойсів"
@@ -175,6 +194,7 @@ fun CashStrings.title(d: CashpilotDestination): String = when (d) {
     CashpilotDestination.INVOICES -> navInvoices
     CashpilotDestination.BILLS -> navBills
     CashpilotDestination.TAXES -> navTaxes
+    CashpilotDestination.PAYROLL -> "Payroll"
     CashpilotDestination.REPORTS -> navReports
     CashpilotDestination.PERIODS -> navPeriods
     CashpilotDestination.SETTINGS -> navSettings
