@@ -412,7 +412,8 @@ fun InvoicesScreen(state: AppState) {
 ) { date, who, net, vat ->
     val ar = state.accBySub("AR") ?: return@DocScreen "Немає рахунку AR"
     val rev = state.accBySub("REVENUE") ?: return@DocScreen "Немає рахунку доходу"
-    val vatAcc = state.accBySub("VAT_OUTPUT_TRANSIT")
+    // Реалізація (перша подія): ПДВ-зобов'язання одразу на 6411; 643 — лише аванси.
+    val vatAcc = state.accBySub("VAT_PAYABLE") ?: state.accBySub("VAT_OUTPUT_TRANSIT")
     val total = net + vat
     val lines = buildList {
         add(JournalLineRequest(ar.id, Direction.DEBIT, moneyString(total)))
@@ -433,7 +434,8 @@ fun BillsScreen(state: AppState) {
 ) { date, who, net, vat ->
     val ap = state.accBySub("AP") ?: return@DocScreen "Немає рахунку AP"
     val exp = state.accBySub("ADMIN") ?: state.accBySub("COGS") ?: return@DocScreen "Немає рахунку витрат"
-    val vatAcc = state.accBySub("VAT_INPUT_TRANSIT")
+    // Податковий кредит за зареєстрованою ПН — одразу на 6411; 644 — для непідтверджених.
+    val vatAcc = state.accBySub("VAT_PAYABLE") ?: state.accBySub("VAT_INPUT_TRANSIT")
     val total = net + vat
     val lines = buildList {
         add(JournalLineRequest(exp.id, Direction.DEBIT, moneyString(net)))

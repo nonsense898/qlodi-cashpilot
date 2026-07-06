@@ -108,8 +108,16 @@ fun normalizeCsvDate(raw: String): String? {
 }
 
 private fun validYmd(y: String, m: String, d: String): String? {
+    val yi = y.toIntOrNull() ?: return null
     val mi = m.toIntOrNull() ?: return null
     val di = d.toIntOrNull() ?: return null
-    if (mi !in 1..12 || di !in 1..31) return null
+    if (mi !in 1..12) return null
+    val leap = (yi % 4 == 0 && yi % 100 != 0) || yi % 400 == 0
+    val maxDay = when (mi) {
+        2 -> if (leap) 29 else 28
+        4, 6, 9, 11 -> 30
+        else -> 31
+    }
+    if (di !in 1..maxDay) return null
     return "$y-$m-$d"
 }
