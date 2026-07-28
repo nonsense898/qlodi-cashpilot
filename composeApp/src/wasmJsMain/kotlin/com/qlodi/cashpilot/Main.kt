@@ -19,7 +19,7 @@ fun main() {
         ?.let { com.qlodi.cashpilot.data.api.ApiConfig.baseUrl = decodeURIComponent(it) }
 
     ComposeViewport(
-        viewportContainer = document.body!!,
+        viewportContainer = document.getElementById("composeRoot")!!,
         configure = { isA11YEnabled = false },
     ) {
         App()

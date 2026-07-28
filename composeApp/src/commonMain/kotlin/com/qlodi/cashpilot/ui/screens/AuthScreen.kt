@@ -39,6 +39,10 @@ fun AuthScreen(state: AppState) {
         scope.launch {
             if (register) state.register(email.trim(), password, name.trim().ifBlank { null })
             else state.login(email.trim(), password)
+            // Успіх → пропонуємо браузеру зберегти пару (Credential Management API).
+            if (state.error == null) {
+                com.qlodi.cashpilot.ui.util.saveCredentialToBrowser(email.trim(), password)
+            }
         }
     }
 
@@ -63,8 +67,11 @@ fun AuthScreen(state: AppState) {
             Text(if (register) S.createAccountTitle else S.signIn, color = c.textPrimary, style = MaterialTheme.typography.headlineSmall)
 
             if (register) QTextField(name, { name = it }, S.name, placeholder = S.nameHint)
-            QTextField(email, { email = it }, S.email, keyboardType = KeyboardType.Email, placeholder = "you@email.com")
-            QTextField(password, { password = it }, S.password, password = true, keyboardType = KeyboardType.Password)
+            QTextField(email, { email = it }, S.email, keyboardType = KeyboardType.Email, placeholder = "you@email.com",
+                autofillKind = com.qlodi.cashpilot.ui.util.AutofillKind.Email)
+            QTextField(password, { password = it }, S.password, password = true, keyboardType = KeyboardType.Password,
+                autofillKind = if (register) com.qlodi.cashpilot.ui.util.AutofillKind.NewPassword
+                               else com.qlodi.cashpilot.ui.util.AutofillKind.CurrentPassword)
 
             state.error?.let { Text(S.errorText(it), color = c.danger, style = MaterialTheme.typography.bodyMedium) }
 

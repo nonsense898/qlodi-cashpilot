@@ -38,16 +38,20 @@
         <div class="ring"></div>
     </div>
 
+    <!-- Compose монтується у власний контейнер, а не в document.body: інакше
+         Compose чіпляє shadow-root на body, і світлі нащадки body (напр. форма
+         автозаповнення паролів) перестають рендеритись зовсім. -->
+    <div id="composeRoot" style="position:fixed; inset:0;"></div>
+
     <script src="composeApp.js"></script>
     <script>
-        // Прибрати сплеш, коли Compose додасть свій canvas у body (перший кадр).
+        // Прибрати сплеш, коли Compose змонтує канвас у #composeRoot (перший кадр).
+        const root = document.getElementById('composeRoot');
         const obs = new MutationObserver(() => {
-            if (document.querySelector('canvas')) {
-                requestAnimationFrame(() => document.body.classList.add('loaded'));
-                obs.disconnect();
-            }
+            requestAnimationFrame(() => document.body.classList.add('loaded'));
+            obs.disconnect();
         });
-        obs.observe(document.body, { childList: true, subtree: true });
+        if (root) obs.observe(root, { childList: true, subtree: true });
         setTimeout(() => document.body.classList.add('loaded'), 5000); // failsafe
     </script>
 </body>

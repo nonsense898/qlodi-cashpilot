@@ -166,15 +166,22 @@ fun QTextField(
     isError: Boolean = false,
     password: Boolean = false,
     supportingText: String? = null,
+    /** Тип поля для менеджера паролів на вебі (null — поле не бере участі в автофілі). */
+    autofillKind: com.qlodi.cashpilot.ui.util.AutofillKind? = null,
     trailingIcon: @Composable (() -> Unit)? = null,
 ) {
     val c = CashpilotColors
+    // Web: текст малює справжній <input> поверх поля (інакше менеджери паролів
+    // не бачать форму логіну на канвасі) — тут гасимо власний текст Compose,
+    // лишаючи за ним рамку й плаваючий лейбл.
+    val domAutofill = autofillKind != null && com.qlodi.cashpilot.ui.util.platformUsesDomAutofill
+    Box(modifier.fillMaxWidth()) {
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        modifier = modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth(),
         label = { Text(label) },
-        placeholder = placeholder?.let { { Text(it, color = c.textMuted) } },
+        placeholder = if (domAutofill) null else placeholder?.let { { Text(it, color = c.textMuted) } },
         singleLine = singleLine,
         isError = isError,
         supportingText = supportingText?.let { { Text(it) } },
@@ -189,13 +196,36 @@ fun QTextField(
             cursorColor = c.heroCyan,
             focusedLabelColor = c.heroCyan,
             unfocusedLabelColor = c.textMuted,
-            focusedTextColor = c.textPrimary,
-            unfocusedTextColor = c.textPrimary,
+            focusedTextColor = if (domAutofill) Color.Transparent else c.textPrimary,
+            unfocusedTextColor = if (domAutofill) Color.Transparent else c.textPrimary,
             focusedContainerColor = c.surfaceHigh,
             unfocusedContainerColor = c.surfaceHigh,
             errorBorderColor = c.danger,
         ),
     )
+        if (domAutofill) {
+            com.qlodi.cashpilot.ui.util.DomAutofillField(
+                kind = autofillKind!!,
+                value = value,
+                onValueChange = onValueChange,
+                // Роль підказки виконує плаваючий лейбл Material — щоб вони не накладались.
+                placeholder = "",
+                passwordVisible = !password,
+                style = com.qlodi.cashpilot.ui.util.AutofillStyle(
+                    textColor = c.textPrimary,
+                    hintColor = c.textMuted,
+                    caretColor = c.heroCyan,
+                    fontSizeSp = 16,
+                ),
+                onSubmit = {},
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(start = 16.dp, end = 16.dp, top = 26.dp)
+                    .fillMaxWidth()
+                    .height(24.dp),
+            )
+        }
+    }
 }
 
 /* ───────────── states ───────────── */
