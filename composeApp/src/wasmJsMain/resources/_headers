@@ -1,0 +1,21 @@
+# Cloudflare Pages: правила кешування.
+# GitHub Pages жорстко ставив max-age=600 — повторний захід перекачував ~5 МБ.
+
+# Хешовані ассети (webpack кладе хеш у назву) — можна кешувати вічно.
+/*.wasm
+  Cache-Control: public, max-age=31536000, immutable
+
+# Точка входу має стабільну назву — лише ревалідація за ETag,
+# інакше нова збірка не доїде до користувача.
+/composeApp.js
+  Cache-Control: public, max-age=0, must-revalidate
+
+/index.html
+  Cache-Control: public, max-age=0, must-revalidate
+
+/
+  Cache-Control: public, max-age=0, must-revalidate
+
+# Сторонні бібліотеки версіонуються вручну — тиждень із ревалідацією.
+/vendor/*
+  Cache-Control: public, max-age=604800
