@@ -19,6 +19,12 @@ echo "▶ Building production wasm…"
 # Source map у прод не потрібен (1.7 МБ мертвої ваги в деплої).
 rm -f "$DIST"/*.js.map
 
+# Проєкт створюється лише раз; deploy у неіснуючий проєкт падає з помилкою.
+if ! npx --yes wrangler@latest pages project list 2>/dev/null | grep -qw "$PROJECT"; then
+  echo "▶ Creating Pages project $PROJECT…"
+  npx --yes wrangler@latest pages project create "$PROJECT" --production-branch main
+fi
+
 echo "▶ Deploying to Cloudflare Pages ($PROJECT)…"
 npx --yes wrangler@latest pages deploy "$DIST" --project-name "$PROJECT" --commit-dirty=true
 
