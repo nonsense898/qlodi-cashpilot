@@ -15,6 +15,7 @@ actual fun DomAutofillField(
     passwordVisible: Boolean,
     style: AutofillStyle,
     onSubmit: () -> Unit,
+    onFocusChange: (Boolean) -> Unit,
     modifier: Modifier,
 ) = Unit
 

@@ -34,9 +34,12 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.TextStyle
@@ -175,11 +178,20 @@ fun QTextField(
     // не бачать форму логіну на канвасі) — тут гасимо власний текст Compose,
     // лишаючи за ним рамку й плаваючий лейбл.
     val domAutofill = autofillKind != null && com.qlodi.cashpilot.ui.util.platformUsesDomAutofill
+    // Compose-поле фокус не бере (див. focusProperties нижче), тож стан «активне»
+    // веде <input> — інакше рамка й лейбл ніколи не підсвітяться.
+    var domFocused by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    val active = domAutofill && domFocused
     Box(modifier.fillMaxWidth()) {
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        modifier = Modifier.fillMaxWidth(),
+        // Під DOM-автофілом поле лише оформлення: інакше воно теж ловить фокус
+        // і малює власну каретку поруч із кареткою <input> (дві каретки).
+        readOnly = domAutofill,
+        modifier = Modifier.fillMaxWidth().then(
+            if (domAutofill) Modifier.focusProperties { canFocus = false } else Modifier
+        ),
         label = { Text(label) },
         placeholder = if (domAutofill) null else placeholder?.let { { Text(it, color = c.textMuted) } },
         singleLine = singleLine,
@@ -192,10 +204,10 @@ fun QTextField(
         textStyle = MaterialTheme.typography.bodyLarge,
         colors = OutlinedTextFieldDefaults.colors(
             focusedBorderColor = c.heroCyan,
-            unfocusedBorderColor = c.border,
-            cursorColor = c.heroCyan,
+            unfocusedBorderColor = if (active) c.heroCyan else c.border,
+            cursorColor = if (domAutofill) Color.Transparent else c.heroCyan,
             focusedLabelColor = c.heroCyan,
-            unfocusedLabelColor = c.textMuted,
+            unfocusedLabelColor = if (active) c.heroCyan else c.textMuted,
             focusedTextColor = if (domAutofill) Color.Transparent else c.textPrimary,
             unfocusedTextColor = if (domAutofill) Color.Transparent else c.textPrimary,
             focusedContainerColor = c.surfaceHigh,
@@ -218,11 +230,12 @@ fun QTextField(
                     fontSizeSp = 16,
                 ),
                 onSubmit = {},
+                onFocusChange = { domFocused = it },
                 modifier = Modifier
                     .align(Alignment.TopStart)
-                    .padding(start = 16.dp, end = 16.dp, top = 26.dp)
+                    .padding(start = 16.dp, end = 16.dp, top = 16.dp)
                     .fillMaxWidth()
-                    .height(24.dp),
+                    .height(44.dp),
             )
         }
     }

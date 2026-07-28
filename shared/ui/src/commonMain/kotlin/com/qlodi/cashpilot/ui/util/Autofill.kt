@@ -44,6 +44,8 @@ expect fun DomAutofillField(
     passwordVisible: Boolean,
     style: AutofillStyle,
     onSubmit: () -> Unit,
+    /** Фокус справжнього <input> — щоб Compose міг намалювати стан «поле активне». */
+    onFocusChange: (Boolean) -> Unit = {},
     modifier: Modifier,
 )
 

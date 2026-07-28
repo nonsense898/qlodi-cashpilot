@@ -31,7 +31,7 @@ private const val SLOT_PASS2 = "pass2"
 @JsFun(
     """() => {
     if (window.__qlodiAf) return;
-    var st = { cb: {}, submit: {} };
+    var st = { cb: {}, submit: {}, focus: {} };
 
     var css = document.createElement('style');
     css.textContent =
@@ -67,6 +67,8 @@ private const val SLOT_PASS2 = "pass2"
         i.addEventListener('keydown', function (e) {
             if (e.key === 'Enter') { e.preventDefault(); var f = st.submit[slot]; if (f) f(); }
         });
+        i.addEventListener('focus', function () { var f = st.focus[slot]; if (f) f(true); });
+        i.addEventListener('blur', function () { var f = st.focus[slot]; if (f) f(false); });
         form.appendChild(i);
         st[slot] = i;
     }
@@ -118,6 +120,9 @@ private external fun afOnInput(slot: String, cb: (String) -> Unit)
 
 @JsFun("(slot, cb) => { if (window.__qlodiAf) window.__qlodiAf.submit[slot] = cb; }")
 private external fun afOnSubmit(slot: String, cb: () -> Unit)
+
+@JsFun("(slot, cb) => { if (window.__qlodiAf) window.__qlodiAf.focus[slot] = cb; }")
+private external fun afOnFocus(slot: String, cb: (Boolean) -> Unit)
 
 @JsFun(
     """(slot, v) => {
@@ -182,12 +187,14 @@ actual fun DomAutofillField(
     passwordVisible: Boolean,
     style: AutofillStyle,
     onSubmit: () -> Unit,
+    onFocusChange: (Boolean) -> Unit,
     modifier: Modifier,
 ) {
     val slot = kind.slot
     val density = LocalDensity.current.density
     val onValue = rememberUpdatedState(onValueChange)
     val onDone = rememberUpdatedState(onSubmit)
+    val onFocus = rememberUpdatedState(onFocusChange)
     // Останнє значення, що прийшло з DOM. Потрібне, щоб НЕ писати його назад:
     // рекомпозиція Compose відстає від набору, і зворотний запис застарілого
     // (коротшого) значення обрізав би текст і зсував каретку.
@@ -200,7 +207,11 @@ actual fun DomAutofillField(
             onValue.value(v)
         }
         afOnSubmit(slot) { onDone.value() }
-        onDispose { afHide(slot) }
+        afOnFocus(slot) { f -> onFocus.value(f) }
+        onDispose {
+            afHide(slot)
+            onFocus.value(false)
+        }
     }
 
     // У DOM пишемо лише зміни, що прийшли ЗЗОВНІ (автовхід, очистка полів при
