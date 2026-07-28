@@ -3,6 +3,8 @@ package com.qlodi.cashpilot.ui.util
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.Modifier
@@ -120,7 +122,12 @@ private external fun afOnSubmit(slot: String, cb: () -> Unit)
 @JsFun(
     """(slot, v) => {
     var st = window.__qlodiAf; var i = st && st[slot];
-    if (i && i.value !== v) i.value = v;
+    if (!i || i.value === v) return;
+    // Якщо поле у фокусі — зберігаємо позицію каретки, інакше вона стрибне в кінець.
+    var focused = document.activeElement === i;
+    var pos = focused ? i.selectionStart : null;
+    i.value = v;
+    if (focused && pos !== null) { try { i.setSelectionRange(pos, pos); } catch (e) {} }
 }"""
 )
 private external fun afSetValue(slot: String, v: String)
@@ -181,16 +188,26 @@ actual fun DomAutofillField(
     val density = LocalDensity.current.density
     val onValue = rememberUpdatedState(onValueChange)
     val onDone = rememberUpdatedState(onSubmit)
+    // Останнє значення, що прийшло з DOM. Потрібне, щоб НЕ писати його назад:
+    // рекомпозиція Compose відстає від набору, і зворотний запис застарілого
+    // (коротшого) значення обрізав би текст і зсував каретку.
+    val lastFromDom = remember { mutableStateOf<String?>(null) }
 
     DisposableEffect(slot) {
         afInit()
-        afOnInput(slot) { v -> onValue.value(v) }
+        afOnInput(slot) { v ->
+            lastFromDom.value = v
+            onValue.value(v)
+        }
         afOnSubmit(slot) { onDone.value() }
         onDispose { afHide(slot) }
     }
 
-    // Зовнішні зміни стану (автовхід, очистка полів при зміні вкладки) — у DOM.
-    LaunchedEffect(slot, value) { afSetValue(slot, value) }
+    // У DOM пишемо лише зміни, що прийшли ЗЗОВНІ (автовхід, очистка полів при
+    // зміні вкладки) — відлуння власного набору ігноруємо.
+    LaunchedEffect(slot, value) {
+        if (value != lastFromDom.value) afSetValue(slot, value)
+    }
 
     val isPassword = kind != AutofillKind.Email
     val type = if (isPassword && !passwordVisible) "password" else if (isPassword) "text" else "email"
