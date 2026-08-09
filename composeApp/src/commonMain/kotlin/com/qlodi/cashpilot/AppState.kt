@@ -19,6 +19,7 @@ class AppState {
     var busy by mutableStateOf(false); private set
     var error by mutableStateOf<String?>(null)
 
+    var entities by mutableStateOf<List<EntityView>>(emptyList()); private set
     var entity by mutableStateOf<EntityView?>(null); private set
     var accounts by mutableStateOf<List<AccountView>>(emptyList()); private set
     var entries by mutableStateOf<List<JournalEntryView>>(emptyList()); private set
@@ -65,10 +66,47 @@ class AppState {
     suspend fun bootstrap() {
         busy = true; error = null
         val list = api.listEntities().getOrNull().orEmpty()
+        entities = list
         val e = list.firstOrNull() ?: api.createEntity(CreateEntityRequest(name = "Моя компанія", jurisdiction = "UA")).getOrNull()
+            ?.also { entities = listOf(it) }
         entity = e
         if (e != null) { reloadAccounts(); reloadEntries(); reloadReports(); reloadPeriods(); reloadBank() }
         busy = false
+    }
+
+    /** Перемкнути активну компанію (кілька юросіб в одному акаунті). */
+    suspend fun selectEntity(id: String) {
+        if (entity?.id == id) return
+        entity = entities.firstOrNull { it.id == id } ?: return
+        busy = true
+        reloadAccounts(); reloadEntries(); reloadReports(); reloadPeriods(); reloadBank()
+        busy = false
+    }
+
+    /** Створити нову компанію з обраною валютою; одразу робить її активною. null при успіху. */
+    suspend fun createCompany(name: String, functionalCurrency: String, jurisdiction: String): String? {
+        val req = CreateEntityRequest(name = name.trim(), jurisdiction = jurisdiction, functionalCurrency = functionalCurrency)
+        return when (val r = api.createEntity(req)) {
+            is ApiResult.Ok -> {
+                entities = entities + r.value
+                selectEntity(r.value.id)
+                null
+            }
+            is ApiResult.Err -> friendly(r.error)
+        }
+    }
+
+    /** Перейменувати / змінити валюту активної компанії. null при успіху. */
+    suspend fun updateCompany(name: String?, functionalCurrency: String?): String? {
+        val eid = entity?.id ?: return "no_entity"
+        return when (val r = api.updateEntity(eid, UpdateEntityRequest(name, functionalCurrency))) {
+            is ApiResult.Ok -> {
+                entity = r.value
+                entities = entities.map { if (it.id == r.value.id) r.value else it }
+                null
+            }
+            is ApiResult.Err -> friendly(r.error)
+        }
     }
 
     suspend fun reloadBank() { entity?.let { bankTxns = api.listBankTxns(it.id, true).getOrNull().orEmpty() } }

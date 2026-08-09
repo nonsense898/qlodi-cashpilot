@@ -23,6 +23,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Business
+import androidx.compose.material.icons.filled.SwapHoriz
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.ui.graphics.Color
+import kotlinx.coroutines.launch
 import com.qlodi.cashpilot.AppState
 import com.qlodi.cashpilot.data.api.SessionStore
 import com.qlodi.cashpilot.ui.components.*
@@ -39,7 +45,11 @@ fun SettingsScreen(state: AppState) {
     val c = CashpilotColors
     val S = LocalStrings.current
     val lang = LocalLanguage.current
+    val scope = rememberCoroutineScope()
     var langPicker by remember { mutableStateOf(false) }
+    var showAdd by remember { mutableStateOf(false) }
+    var showEdit by remember { mutableStateOf(false) }
+    var showSwitch by remember { mutableStateOf(false) }
 
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
         SectionTitle(S.navSettings)
@@ -56,6 +66,20 @@ fun SettingsScreen(state: AppState) {
                     Text(SessionStore.email ?: "—", color = c.textMuted, style = MaterialTheme.typography.bodyMedium)
                 }
                 state.entity?.let { QBadge("${it.jurisdiction} · ${it.functionalCurrency}") }
+            }
+        }
+
+        // ── Company: switch between legal entities, edit currency, add new ──
+        SectionLabel(S.companyGroup)
+        QCard(Modifier.fillMaxWidth(), padding = 0) {
+            Column {
+                if (state.entities.size > 1) {
+                    SettingsRow(Icons.Filled.SwapHoriz, S.switchCompany, trailingText = "${state.entities.size}", showChevron = true, onClick = { showSwitch = true })
+                    RowDivider()
+                }
+                SettingsRow(Icons.Filled.Edit, S.editCompany, trailingText = state.entity?.functionalCurrency ?: "—", showChevron = true, onClick = { showEdit = true })
+                RowDivider()
+                SettingsRow(Icons.Filled.Add, S.addCompany, showChevron = true, onClick = { showAdd = true })
             }
         }
 
@@ -104,6 +128,108 @@ fun SettingsScreen(state: AppState) {
                             if (on) Text("✓", color = c.heroCyan, style = MaterialTheme.typography.titleMedium)
                         }
                     }
+                }
+            }
+        }
+    }
+
+    // ── Switch active company ──
+    if (showSwitch) {
+        CompanyDialogShell(S.switchCompany, onDismiss = { showSwitch = false }) {
+            state.entities.forEach { e ->
+                val on = e.id == state.entity?.id
+                Row(
+                    Modifier.fillMaxWidth().clip(RoundedCornerShape(Radii.sm))
+                        .background(if (on) c.accentDim else Color.Transparent)
+                        .clickable { scope.launch { state.selectEntity(e.id) }; showSwitch = false }
+                        .padding(horizontal = Spacing.md, vertical = Spacing.md),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(e.name, color = if (on) c.heroCyan else c.textPrimary, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                    Text("${e.jurisdiction} · ${e.functionalCurrency}", color = c.textMuted, style = MaterialTheme.typography.bodySmall)
+                    if (on) { Spacer(Modifier.width(Spacing.sm)); Text("✓", color = c.heroCyan) }
+                }
+            }
+        }
+    }
+
+    // ── Add company (name + jurisdiction + currency) ──
+    if (showAdd) {
+        var name by remember { mutableStateOf("") }
+        var jur by remember { mutableStateOf("UA") }
+        var cur by remember { mutableStateOf("UAH") }
+        var err by remember { mutableStateOf<String?>(null) }
+        CompanyDialogShell(S.addCompany, onDismiss = { showAdd = false }) {
+            QTextField(name, { name = it }, S.companyName, Modifier.fillMaxWidth())
+            PillRow(S.jurisdictionLabel, listOf("UA", "EU"), jur) { jur = it; cur = if (it == "EU") "EUR" else "UAH" }
+            PillRow(S.currencyLabel, CURRENCIES, cur) { cur = it }
+            err?.let { Text(it, color = c.danger, style = MaterialTheme.typography.bodySmall) }
+            QPrimaryButton(
+                S.createAction,
+                onClick = { scope.launch { err = state.createCompany(name, cur, jur); if (err == null) showAdd = false } },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = name.isNotBlank(),
+            )
+        }
+    }
+
+    // ── Edit active company (rename + currency, locked once entries exist) ──
+    if (showEdit) {
+        val cur0 = state.entity?.functionalCurrency ?: "UAH"
+        var name by remember { mutableStateOf(state.entity?.name ?: "") }
+        var cur by remember { mutableStateOf(cur0) }
+        var err by remember { mutableStateOf<String?>(null) }
+        CompanyDialogShell(S.editCompany, onDismiss = { showEdit = false }) {
+            QTextField(name, { name = it }, S.companyName, Modifier.fillMaxWidth())
+            PillRow(S.currencyLabel, CURRENCIES, cur) { cur = it }
+            Text(S.currencyLockedHint, color = c.textMuted, style = MaterialTheme.typography.bodySmall)
+            err?.let { Text(it, color = c.danger, style = MaterialTheme.typography.bodySmall) }
+            QPrimaryButton(
+                S.saveAction,
+                onClick = {
+                    scope.launch {
+                        err = state.updateCompany(name.trim(), cur.takeIf { it != cur0 })
+                        if (err == null) showEdit = false
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = name.isNotBlank(),
+            )
+        }
+    }
+}
+
+private val CURRENCIES = listOf("UAH", "USD", "EUR", "PLN", "GBP")
+
+@Composable
+private fun CompanyDialogShell(title: String, onDismiss: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
+    val c = CashpilotColors
+    Dialog(onDismissRequest = onDismiss) {
+        Box(Modifier.fillMaxWidth().clip(RoundedCornerShape(Radii.lg)).background(c.surface).border(1.dp, c.border, RoundedCornerShape(Radii.lg)).padding(Spacing.lg)) {
+            Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
+                Text(title, color = c.textPrimary, style = MaterialTheme.typography.titleMedium)
+                content()
+            }
+        }
+    }
+}
+
+/** Horizontal single-select pill row (label + chips). */
+@Composable
+private fun PillRow(label: String, options: List<String>, selected: String, onSelect: (String) -> Unit) {
+    val c = CashpilotColors
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+        Text(label, color = c.textMuted, style = MaterialTheme.typography.labelMedium)
+        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+            options.forEach { opt ->
+                val on = opt == selected
+                Box(
+                    Modifier.clip(RoundedCornerShape(Radii.sm))
+                        .background(if (on) c.heroCyan else c.surfaceElevated)
+                        .clickable { onSelect(opt) }
+                        .padding(horizontal = Spacing.md, vertical = Spacing.sm),
+                ) {
+                    Text(opt, color = if (on) c.onAccent else c.textSecondary, style = MaterialTheme.typography.labelLarge)
                 }
             }
         }

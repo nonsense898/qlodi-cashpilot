@@ -6,6 +6,7 @@ import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
+import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 
 /**
@@ -40,6 +41,9 @@ class CashpilotApi(private val tokenProvider: TokenProvider = SessionStore) {
 
     suspend fun createEntity(req: CreateEntityRequest): ApiResult<EntityView> =
         apiCall { client.post(ApiConfig.url("/ledger/entities")) { setBody(req) } }
+
+    suspend fun updateEntity(eid: String, req: UpdateEntityRequest): ApiResult<EntityView> =
+        apiCall { client.put(ApiConfig.url("/ledger/entities/$eid")) { setBody(req) } }
 
     /* ── Accounts ── */
     suspend fun listAccounts(eid: String): ApiResult<List<AccountView>> =

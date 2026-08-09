@@ -20,6 +20,8 @@ class CashStrings {
     // settings
     var settingsGroup = ""; var accountGroup = ""; var language = ""; var currencyLabel = ""
     var jurisdictionLabel = ""; var entityLabel = ""; var selectLanguage = ""
+    var companyGroup = ""; var addCompany = ""; var editCompany = ""; var switchCompany = ""
+    var companyName = ""; var currencyLockedHint = ""; var createAction = ""; var saveAction = ""
     var themeLabel = ""; var themeDark = ""; var themeLight = ""
     // nav
     var navDashboard = ""; var navAccounts = ""; var navJournal = ""; var navBanking = ""
@@ -82,6 +84,9 @@ private fun en() = CashStrings().apply {
     cancel = "Cancel"; open = "Open"; dt = "Dr"; kt = "Cr"
     settingsGroup = "SETTINGS"; accountGroup = "ACCOUNT"; language = "Language"; currencyLabel = "Currency"
     jurisdictionLabel = "Jurisdiction"; entityLabel = "Entity"; selectLanguage = "Choose language"
+    companyGroup = "COMPANY"; addCompany = "Add company"; editCompany = "Edit company"; switchCompany = "Switch company"
+    companyName = "Company name"; currencyLockedHint = "Currency locks after the first journal entry."
+    createAction = "Create"; saveAction = "Save"
     themeLabel = "Theme"; themeDark = "Dark"; themeLight = "Light"
     navDashboard = "Dashboard"; navAccounts = "Chart of Accounts"; navJournal = "Journal"; navBanking = "Banking"
     navInvoices = "Invoices (AR)"; navBills = "Bills (AP)"; navTaxes = "Taxes / VAT"; navReports = "Reports"
@@ -142,6 +147,9 @@ private fun uk() = CashStrings().apply {
     cancel = "Скасувати"; open = "Відкрити"; dt = "Дт"; kt = "Кт"
     settingsGroup = "НАЛАШТУВАННЯ"; accountGroup = "АКАУНТ"; language = "Мова"; currencyLabel = "Валюта"
     jurisdictionLabel = "Юрисдикція"; entityLabel = "Компанія"; selectLanguage = "Обрати мову"
+    companyGroup = "КОМПАНІЯ"; addCompany = "Додати компанію"; editCompany = "Редагувати компанію"; switchCompany = "Змінити компанію"
+    companyName = "Назва компанії"; currencyLockedHint = "Валюта фіксується після першої проводки."
+    createAction = "Створити"; saveAction = "Зберегти"
     themeLabel = "Тема"; themeDark = "Темна"; themeLight = "Світла"
     navDashboard = "Дашборд"; navAccounts = "План рахунків"; navJournal = "Журнал"; navBanking = "Банк"
     navInvoices = "Інвойси (AR)"; navBills = "Рахунки (AP)"; navTaxes = "Податки / ПДВ"; navReports = "Звіти"

@@ -32,6 +32,12 @@ data class CreateEntityRequest(
 )
 
 @Serializable
+data class UpdateEntityRequest(
+    val name: String? = null,
+    val functionalCurrency: String? = null,
+)
+
+@Serializable
 data class EntityView(
     val id: String, val name: String, val jurisdiction: String,
     val functionalCurrency: String, val fiscalYearStartMonth: Int, val createdAt: String,
