@@ -20,6 +20,8 @@ class CashStrings {
     // settings
     var settingsGroup = ""; var accountGroup = ""; var language = ""; var currencyLabel = ""
     var jurisdictionLabel = ""; var entityLabel = ""; var selectLanguage = ""
+    var companyGroup = ""; var addCompany = ""; var editCompany = ""; var switchCompany = ""
+    var companyName = ""; var currencyLockedHint = ""; var createAction = ""; var saveAction = ""
     var themeLabel = ""; var themeDark = ""; var themeLight = ""
     // nav
     var navDashboard = ""; var navAccounts = ""; var navJournal = ""; var navBanking = ""
@@ -74,6 +76,7 @@ class CashStrings {
     var cfNetChange = ""; var cfOpening = ""; var cfClosing = ""
     var yearEndClose = ""; var yearEndCloseMsg = ""
     var pnlTab = ""; var pnlCogs = ""; var pnlGross = ""; var pnlAdmin = ""; var pnlSelling = ""
+    var groupTab = ""; var presentationCurrency = ""; var consolidationNote = ""
     var pnlOtherOpex = ""; var pnlOperating = ""; var pnlOtherIncome = ""; var pnlFinanceCost = ""; var pnlIncomeTax = ""
 }
 
@@ -82,6 +85,9 @@ private fun en() = CashStrings().apply {
     cancel = "Cancel"; open = "Open"; dt = "Dr"; kt = "Cr"
     settingsGroup = "SETTINGS"; accountGroup = "ACCOUNT"; language = "Language"; currencyLabel = "Currency"
     jurisdictionLabel = "Jurisdiction"; entityLabel = "Entity"; selectLanguage = "Choose language"
+    companyGroup = "COMPANY"; addCompany = "Add company"; editCompany = "Edit company"; switchCompany = "Switch company"
+    companyName = "Company name"; currencyLockedHint = "Currency locks after the first journal entry."
+    createAction = "Create"; saveAction = "Save"
     themeLabel = "Theme"; themeDark = "Dark"; themeLight = "Light"
     navDashboard = "Dashboard"; navAccounts = "Chart of Accounts"; navJournal = "Journal"; navBanking = "Banking"
     navInvoices = "Invoices (AR)"; navBills = "Bills (AP)"; navTaxes = "Taxes / VAT"; navReports = "Reports"
@@ -134,6 +140,8 @@ private fun en() = CashStrings().apply {
     cfNetChange = "Net change"; cfOpening = "Opening cash"; cfClosing = "Closing cash"
     yearEndClose = "Year-end close"; yearEndCloseMsg = "Zeroes income & expenses into retained earnings (441). A closing entry is created."
     pnlTab = "P&L"; pnlCogs = "Cost of sales"; pnlGross = "Gross profit"; pnlAdmin = "Administrative"; pnlSelling = "Selling"
+    groupTab = "Group"; presentationCurrency = "Presentation currency"
+    consolidationNote = "Each entity translated at the current rate, then summed. Not a statutory consolidation (no CTA)."
     pnlOtherOpex = "Other opex"; pnlOperating = "Operating profit"; pnlOtherIncome = "Other income"; pnlFinanceCost = "Finance cost"; pnlIncomeTax = "Income tax"
 }
 
@@ -142,6 +150,9 @@ private fun uk() = CashStrings().apply {
     cancel = "Скасувати"; open = "Відкрити"; dt = "Дт"; kt = "Кт"
     settingsGroup = "НАЛАШТУВАННЯ"; accountGroup = "АКАУНТ"; language = "Мова"; currencyLabel = "Валюта"
     jurisdictionLabel = "Юрисдикція"; entityLabel = "Компанія"; selectLanguage = "Обрати мову"
+    companyGroup = "КОМПАНІЯ"; addCompany = "Додати компанію"; editCompany = "Редагувати компанію"; switchCompany = "Змінити компанію"
+    companyName = "Назва компанії"; currencyLockedHint = "Валюта фіксується після першої проводки."
+    createAction = "Створити"; saveAction = "Зберегти"
     themeLabel = "Тема"; themeDark = "Темна"; themeLight = "Світла"
     navDashboard = "Дашборд"; navAccounts = "План рахунків"; navJournal = "Журнал"; navBanking = "Банк"
     navInvoices = "Інвойси (AR)"; navBills = "Рахунки (AP)"; navTaxes = "Податки / ПДВ"; navReports = "Звіти"
@@ -194,6 +205,8 @@ private fun uk() = CashStrings().apply {
     cfNetChange = "Чиста зміна"; cfOpening = "Кошти на початок"; cfClosing = "Кошти на кінець"
     yearEndClose = "Закрити рік"; yearEndCloseMsg = "Обнуляє доходи й витрати в нерозподілений прибуток (441). Створюється closing-проводка."
     pnlTab = "P&L"; pnlCogs = "Собівартість"; pnlGross = "Валовий прибуток"; pnlAdmin = "Адміністративні"; pnlSelling = "Збут"
+    groupTab = "Група"; presentationCurrency = "Валюта звіту"
+    consolidationNote = "Кожна юрособа транслюється за поточним курсом і підсумовується. Не повна консолідація (без CTA)."
     pnlOtherOpex = "Інші операційні"; pnlOperating = "Операційний прибуток"; pnlOtherIncome = "Інші доходи"; pnlFinanceCost = "Фінвитрати"; pnlIncomeTax = "Податок на прибуток"
 }
 

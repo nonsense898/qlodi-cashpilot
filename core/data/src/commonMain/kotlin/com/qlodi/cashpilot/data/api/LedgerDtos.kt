@@ -32,6 +32,12 @@ data class CreateEntityRequest(
 )
 
 @Serializable
+data class UpdateEntityRequest(
+    val name: String? = null,
+    val functionalCurrency: String? = null,
+)
+
+@Serializable
 data class EntityView(
     val id: String, val name: String, val jurisdiction: String,
     val functionalCurrency: String, val fiscalYearStartMonth: Int, val createdAt: String,
@@ -109,6 +115,20 @@ data class PnlView(
     val revenue: String, val cogs: String, val grossProfit: String,
     val adminExpenses: String, val sellingExpenses: String, val otherOpex: String, val operatingProfit: String,
     val otherIncome: String, val financeCost: String, val incomeTax: String, val netProfit: String,
+)
+
+@Serializable
+data class ConsolidatedEntityPnl(
+    val entityId: String, val name: String, val functionalCurrency: String,
+    val fxRate: String, val pnl: PnlView,
+)
+
+@Serializable
+data class ConsolidatedPnlView(
+    val presentationCurrency: String, val from: String, val to: String,
+    val method: String = "closing_rate",
+    val entities: List<ConsolidatedEntityPnl> = emptyList(),
+    val total: PnlView,
 )
 
 @Serializable

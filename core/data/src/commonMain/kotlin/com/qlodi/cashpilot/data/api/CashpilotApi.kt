@@ -6,6 +6,7 @@ import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
+import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 
 /**
@@ -40,6 +41,9 @@ class CashpilotApi(private val tokenProvider: TokenProvider = SessionStore) {
 
     suspend fun createEntity(req: CreateEntityRequest): ApiResult<EntityView> =
         apiCall { client.post(ApiConfig.url("/ledger/entities")) { setBody(req) } }
+
+    suspend fun updateEntity(eid: String, req: UpdateEntityRequest): ApiResult<EntityView> =
+        apiCall { client.put(ApiConfig.url("/ledger/entities/$eid")) { setBody(req) } }
 
     /* ── Accounts ── */
     suspend fun listAccounts(eid: String): ApiResult<List<AccountView>> =
@@ -78,6 +82,14 @@ class CashpilotApi(private val tokenProvider: TokenProvider = SessionStore) {
 
     suspend fun pnl(eid: String, from: String, to: String): ApiResult<PnlView> =
         apiCall { client.get(ApiConfig.url("/ledger/entities/$eid/reports/pnl")) { parameter("from", from); parameter("to", to) } }
+
+    /** Консолідований P&L по всіх юрособах у презентаційній валюті. */
+    suspend fun consolidatedPnl(presentation: String, from: String, to: String): ApiResult<ConsolidatedPnlView> =
+        apiCall {
+            client.get(ApiConfig.url("/ledger/consolidation/pnl")) {
+                parameter("presentation", presentation); parameter("from", from); parameter("to", to)
+            }
+        }
 
     /* ── Banking / reconciliation ── */
     suspend fun importBank(eid: String, req: ImportBankRequest): ApiResult<ImportResult> =
