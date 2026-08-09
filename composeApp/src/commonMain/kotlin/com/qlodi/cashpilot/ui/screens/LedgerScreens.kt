@@ -398,6 +398,7 @@ private fun GroupReportCard(state: AppState) {
     val currencies = listOf("UAH", "USD", "EUR", "PLN", "GBP")
     var cur by remember { mutableStateOf(state.entity?.functionalCurrency ?: "USD") }
     var data by remember { mutableStateOf<ConsolidatedPnlView?>(null) }
+    var bs by remember { mutableStateOf<ConsolidatedBsView?>(null) }
     var loading by remember { mutableStateOf(false) }
     var err by remember { mutableStateOf<String?>(null) }
 
@@ -407,6 +408,7 @@ private fun GroupReportCard(state: AppState) {
             is ApiResult.Ok -> { data = r.value }
             is ApiResult.Err -> { data = null; err = r.error.message }
         }
+        bs = state.api.consolidatedBalanceSheet(cur, "2100-12-31", "1970-01-01").getOrNull()
         loading = false
     }
 
@@ -427,6 +429,7 @@ private fun GroupReportCard(state: AppState) {
         when {
             loading -> LoadingState()
             data != null -> {
+                Text(S.groupPnl, color = c.textSecondary, style = MaterialTheme.typography.titleSmall)
                 PnlReportCard(data!!.total)
                 // Per-entity contributions (name · currency · rate → net).
                 QCard(Modifier.fillMaxWidth()) {
@@ -442,8 +445,36 @@ private fun GroupReportCard(state: AppState) {
                         }
                     }
                 }
+                bs?.let { GroupBalanceSheet(it) }
             }
             else -> EmptyState(Icons.Filled.Assessment, S.noData, err ?: S.addEntries)
+        }
+    }
+}
+
+@Composable
+private fun GroupBalanceSheet(bs: ConsolidatedBsView) {
+    val c = CashpilotColors
+    val S = LocalStrings.current
+    Text(S.groupBalanceSheet, color = c.textSecondary, style = MaterialTheme.typography.titleSmall)
+    QCard(Modifier.fillMaxWidth()) {
+        Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+            bs.assets.forEach { CfRow(it.name, it.amount, c.textSecondary) }
+            Box(Modifier.fillMaxWidth().height(1.dp).background(c.border))
+            CfRow(S.assetsTotal, bs.totalAssets, c.textPrimary, bold = true)
+            Spacer(Modifier.height(Spacing.xs))
+            bs.liabilities.forEach { CfRow(it.name, it.amount, c.textSecondary) }
+            bs.equity.forEach { line ->
+                val isCta = line.code == "CTA"
+                CfRow(if (isCta) S.ctaLabel else line.name, line.amount, if (isCta) c.warning else c.textSecondary)
+            }
+            Box(Modifier.fillMaxWidth().height(1.dp).background(c.border))
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text(S.liabEquityTotal, color = c.textPrimary, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                NumberText(money(bs.totalLiabilitiesEquity), color = c.textPrimary, size = 14, weight = FontWeight.Bold)
+                Spacer(Modifier.width(Spacing.sm))
+                QBadge(if (bs.balanced) "=" else "≠", if (bs.balanced) c.positive else c.danger)
+            }
         }
     }
 }

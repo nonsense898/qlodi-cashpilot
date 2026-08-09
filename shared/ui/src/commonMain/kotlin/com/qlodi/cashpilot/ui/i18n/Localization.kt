@@ -77,6 +77,7 @@ class CashStrings {
     var yearEndClose = ""; var yearEndCloseMsg = ""
     var pnlTab = ""; var pnlCogs = ""; var pnlGross = ""; var pnlAdmin = ""; var pnlSelling = ""
     var groupTab = ""; var presentationCurrency = ""; var consolidationNote = ""
+    var groupPnl = ""; var groupBalanceSheet = ""; var ctaLabel = ""
     var pnlOtherOpex = ""; var pnlOperating = ""; var pnlOtherIncome = ""; var pnlFinanceCost = ""; var pnlIncomeTax = ""
 }
 
@@ -141,7 +142,8 @@ private fun en() = CashStrings().apply {
     yearEndClose = "Year-end close"; yearEndCloseMsg = "Zeroes income & expenses into retained earnings (441). A closing entry is created."
     pnlTab = "P&L"; pnlCogs = "Cost of sales"; pnlGross = "Gross profit"; pnlAdmin = "Administrative"; pnlSelling = "Selling"
     groupTab = "Group"; presentationCurrency = "Presentation currency"
-    consolidationNote = "Each entity translated at the current rate, then summed. Not a statutory consolidation (no CTA)."
+    consolidationNote = "P&L summed at the current rate; the balance sheet uses the current-rate method with a CTA in equity (rates from the FX layer, spot as fallback)."
+    groupPnl = "Group P&L"; groupBalanceSheet = "Group balance sheet"; ctaLabel = "Translation adjustment (CTA)"
     pnlOtherOpex = "Other opex"; pnlOperating = "Operating profit"; pnlOtherIncome = "Other income"; pnlFinanceCost = "Finance cost"; pnlIncomeTax = "Income tax"
 }
 
@@ -206,7 +208,8 @@ private fun uk() = CashStrings().apply {
     yearEndClose = "Закрити рік"; yearEndCloseMsg = "Обнуляє доходи й витрати в нерозподілений прибуток (441). Створюється closing-проводка."
     pnlTab = "P&L"; pnlCogs = "Собівартість"; pnlGross = "Валовий прибуток"; pnlAdmin = "Адміністративні"; pnlSelling = "Збут"
     groupTab = "Група"; presentationCurrency = "Валюта звіту"
-    consolidationNote = "Кожна юрособа транслюється за поточним курсом і підсумовується. Не повна консолідація (без CTA)."
+    consolidationNote = "P&L підсумовано за поточним курсом; баланс — метод поточного курсу з CTA у капіталі (курси з шару FX, спот як фолбек)."
+    groupPnl = "Груповий P&L"; groupBalanceSheet = "Груповий баланс"; ctaLabel = "Курсова різниця (CTA)"
     pnlOtherOpex = "Інші операційні"; pnlOperating = "Операційний прибуток"; pnlOtherIncome = "Інші доходи"; pnlFinanceCost = "Фінвитрати"; pnlIncomeTax = "Податок на прибуток"
 }
 

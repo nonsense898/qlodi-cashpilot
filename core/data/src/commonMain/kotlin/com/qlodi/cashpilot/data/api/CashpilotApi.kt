@@ -91,6 +91,14 @@ class CashpilotApi(private val tokenProvider: TokenProvider = SessionStore) {
             }
         }
 
+    /** Консолідований баланс (метод поточного курсу, з CTA у капіталі). */
+    suspend fun consolidatedBalanceSheet(presentation: String, asOf: String, from: String): ApiResult<ConsolidatedBsView> =
+        apiCall {
+            client.get(ApiConfig.url("/ledger/consolidation/balance-sheet")) {
+                parameter("presentation", presentation); parameter("asOf", asOf); parameter("from", from)
+            }
+        }
+
     /* ── Banking / reconciliation ── */
     suspend fun importBank(eid: String, req: ImportBankRequest): ApiResult<ImportResult> =
         apiCall { client.post(ApiConfig.url("/ledger/entities/$eid/bank/import")) { setBody(req) } }
