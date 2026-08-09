@@ -53,6 +53,7 @@ data class JournalLineRequest(
 @Serializable
 data class PostEntryRequest(
     val entryDate: String, val currency: String = "UAH", val description: String? = null,
+    val counterparty: String? = null,
     val source: EntrySource = EntrySource.MANUAL, val idempotencyKey: String? = null,
     val lines: List<JournalLineRequest> = emptyList(),
 )
@@ -67,7 +68,8 @@ data class JournalLineView(
 @Serializable
 data class JournalEntryView(
     val id: String, val entityId: String, val entryDate: String, val currency: String,
-    val description: String? = null, val source: EntrySource, val status: EntryStatus,
+    val description: String? = null, val counterparty: String? = null,
+    val source: EntrySource, val status: EntryStatus,
     val reversalOf: String? = null, val postedAt: String, val lines: List<JournalLineView> = emptyList(),
 )
 
@@ -142,11 +144,15 @@ data class Employee(
     val fullName: String,
     val taxId: String? = null,
     val monthlySalary: Double,
-    val employmentType: String = "main",
+    val employmentType: String = "main", // main | secondary | gig | fop
     val diiaCity: Boolean = false,
     val disability: Boolean = false,
     val active: Boolean = true,
     val hiredAt: String? = null,
+    // Ручні override-и ставок (частки, напр. 0.18); null → ставка з конфігу паку.
+    val pitRateOverride: Double? = null,
+    val militaryLevyRateOverride: Double? = null,
+    val sscRateOverride: Double? = null,
 )
 
 @Serializable

@@ -40,6 +40,7 @@ import com.qlodi.cashpilot.ui.util.filterDecimalInput
 import com.qlodi.cashpilot.ui.util.formatMoney
 import com.qlodi.cashpilot.ui.util.normalizeDecimal
 import com.qlodi.cashpilot.ui.util.parseAmount
+import com.qlodi.cashpilot.ui.util.saveTextFile
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.window.Dialog
@@ -93,6 +94,16 @@ fun JournalScreen(state: AppState, contentPadding: PaddingValues) {
     val scope = rememberCoroutineScope()
     var showEditor by remember { mutableStateOf(false) }
     var reverseTarget by remember { mutableStateOf<JournalEntryView?>(null) }
+    var query by remember { mutableStateOf("") }
+
+    val q = query.trim()
+    val filtered = if (q.isBlank()) state.entries else state.entries.filter { e ->
+        e.entryDate.contains(q, true) ||
+            e.counterparty?.contains(q, true) == true ||
+            e.description?.contains(q, true) == true ||
+            e.source.name.contains(q, true) ||
+            e.lines.any { it.accountCode.contains(q, true) || it.accountName.contains(q, true) }
+    }
 
     Box(Modifier.fillMaxSize()) {
         LazyColumn(
@@ -104,21 +115,45 @@ fun JournalScreen(state: AppState, contentPadding: PaddingValues) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     SectionTitle(S.navJournal, "${state.entries.size} ${S.entriesWord}")
                     Spacer(Modifier.weight(1f))
+                    if (state.entries.isNotEmpty()) {
+                        QTonalButton(S.exportCsv, {
+                            scope.launch {
+                                val csv = state.exportJournalCsv()
+                                if (csv != null) {
+                                    val name = state.entity?.name?.take(40)?.replace(Regex("[^A-Za-z0-9._-]"), "_") ?: "journal"
+                                    saveTextFile("$name-journal.csv", csv)
+                                } else {
+                                    state.error = S.exportEmpty
+                                }
+                            }
+                        })
+                        Spacer(Modifier.width(Spacing.sm))
+                    }
                     if (showEditor) QTonalButton(S.close, { showEditor = false })
                     else QPrimaryButton(S.newEntry, { showEditor = true })
                 }
             }
             if (showEditor) item("editor") { NewEntryEditor(state) { showEditor = false } }
+            if (state.entries.size > 5 && !showEditor) item("search") {
+                QTextField(query, { query = it }, S.search,
+                    trailingIcon = { Icon(Icons.Filled.Search, null, tint = c.textMuted) })
+            }
             if (state.entries.isEmpty() && !showEditor) item("empty") {
                 if (state.busy) LoadingState() else EmptyState(Icons.AutoMirrored.Filled.ReceiptLong, S.journalEmpty, S.journalEmptySub)
             }
-            items(state.entries, key = { it.id }) { e ->
+            if (state.entries.isNotEmpty() && filtered.isEmpty()) item("no-match") {
+                EmptyState(Icons.Filled.Search, S.noResults, S.noResultsSub)
+            }
+            items(filtered, key = { it.id }) { e ->
                 QCard(Modifier.fillMaxWidth()) {
                     Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(e.entryDate, color = c.textPrimary, style = MaterialTheme.typography.titleSmall)
                             Spacer(Modifier.width(Spacing.sm))
-                            Text(e.description ?: "—", color = c.textSecondary, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                            Text(
+                                e.counterparty?.let { "$it · ${e.description ?: "—"}" } ?: (e.description ?: "—"),
+                                color = c.textSecondary, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f),
+                            )
                             if (e.status == EntryStatus.REVERSED) QBadge(S.reversedBadge, c.warning)
                             else if (e.source == EntrySource.REVERSAL) QBadge(S.reversalBadge, c.textMuted)
                         }
@@ -165,6 +200,7 @@ private fun NewEntryEditor(state: AppState, onDone: () -> Unit) {
     val scope = rememberCoroutineScope()
     var date by remember { mutableStateOf("2026-06-30") }
     var desc by remember { mutableStateOf("") }
+    var counterparty by remember { mutableStateOf("") }
     val lines = remember { mutableStateListOf(LineDraft(null, Direction.DEBIT, ""), LineDraft(null, Direction.CREDIT, "")) }
     var err by remember { mutableStateOf<String?>(null) }
     var posting by remember { mutableStateOf(false) }
@@ -180,6 +216,7 @@ private fun NewEntryEditor(state: AppState, onDone: () -> Unit) {
                 QTextField(date, { date = filterDateInput(it) }, S.date, Modifier.width(150.dp), keyboardType = KeyboardType.Number, placeholder = "2026-06-30")
                 QTextField(desc, { desc = it }, S.description, Modifier.weight(1f))
             }
+            QTextField(counterparty, { counterparty = it }, S.counterparty, Modifier.fillMaxWidth())
             lines.forEachIndexed { i, l ->
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                     AccountPicker(state.accounts, l.account, Modifier.weight(1f)) { l.account = it }
@@ -202,6 +239,7 @@ private fun NewEntryEditor(state: AppState, onDone: () -> Unit) {
                     posting = true; err = null
                     val req = PostEntryRequest(
                         entryDate = date.trim(), description = desc.trim().ifBlank { null },
+                        counterparty = counterparty.trim().ifBlank { null },
                         lines = lines.mapNotNull { l -> l.account?.let { JournalLineRequest(it.id, l.direction, normalizeDecimal(l.amount)) } },
                     )
                     err = state.post(req)

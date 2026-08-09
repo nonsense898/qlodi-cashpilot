@@ -55,6 +55,10 @@ class CashpilotApi(private val tokenProvider: TokenProvider = SessionStore) {
     suspend fun reverseEntry(eid: String, id: String): ApiResult<JournalEntryView> =
         apiCall { client.post(ApiConfig.url("/ledger/entities/$eid/journal-entries/$id/reverse")) }
 
+    /** CSV-експорт журналу проводок (сирий текст із бекенду). */
+    suspend fun exportJournalCsv(eid: String): ApiResult<String> =
+        apiCall { client.get(ApiConfig.url("/ledger/entities/$eid/journal-entries/export")) }
+
     /* ── Periods ── */
     suspend fun listPeriods(eid: String): ApiResult<List<PeriodView>> =
         apiCall { client.get(ApiConfig.url("/ledger/entities/$eid/periods")) }
