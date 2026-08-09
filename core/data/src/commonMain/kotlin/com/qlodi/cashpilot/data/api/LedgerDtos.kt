@@ -132,6 +132,17 @@ data class ConsolidatedPnlView(
 )
 
 @Serializable
+data class UpsertFxRateRequest(
+    val base: String, val quote: String, val rateDate: String, val rate: String, val source: String = "MANUAL",
+)
+
+@Serializable
+data class FxRateView(
+    val id: String, val base: String, val quote: String,
+    val rateDate: String, val rate: String, val source: String,
+)
+
+@Serializable
 data class ConsolidatedBsEntity(
     val entityId: String, val name: String, val functionalCurrency: String,
     val closingRate: String, val averageRate: String, val historicalRate: String, val cta: String,
