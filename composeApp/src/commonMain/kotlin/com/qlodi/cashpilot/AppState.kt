@@ -129,6 +129,9 @@ class AppState {
         }
     }
 
+    /** CSV-експорт журналу проводок. Повертає сирий текст або null (немає entity/помилка). */
+    suspend fun exportJournalCsv(): String? = entity?.let { api.exportJournalCsv(it.id).getOrNull() }
+
     suspend fun reverse(id: String) {
         val eid = entity?.id ?: return
         if (api.reverseEntry(eid, id) is ApiResult.Ok) { reloadEntries(); reloadReports() }

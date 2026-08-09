@@ -13,8 +13,10 @@ import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.RequestQuote
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -227,6 +229,7 @@ fun PayrollScreen(state: AppState) {
     var runs by remember { mutableStateOf<List<PayrollRun>>(emptyList()) }
     var adding by remember { mutableStateOf(false) }
     var msg by remember { mutableStateOf<String?>(null) }
+    var empQuery by remember { mutableStateOf("") }
 
     suspend fun reload() {
         state.entity?.let { e ->
@@ -247,7 +250,15 @@ fun PayrollScreen(state: AppState) {
         // ── Працівники ──
         Text("${S.employeesTitle} · ${employees.size}", color = c.textSecondary, style = MaterialTheme.typography.titleSmall)
         if (employees.isEmpty()) Text(S.noEmployees, color = c.textMuted, style = MaterialTheme.typography.bodySmall)
-        employees.forEach { e ->
+        if (employees.size > 8) QTextField(empQuery, { empQuery = it }, S.search,
+            trailingIcon = { Icon(Icons.Filled.Search, null, tint = c.textMuted) })
+        val q = empQuery.trim()
+        val shownEmp = if (q.isBlank()) employees else employees.filter {
+            it.fullName.contains(q, true) || (it.taxId?.contains(q, true) == true)
+        }
+        if (employees.isNotEmpty() && shownEmp.isEmpty())
+            Text(S.noResults, color = c.textMuted, style = MaterialTheme.typography.bodySmall)
+        shownEmp.forEach { e ->
             QCard(Modifier.fillMaxWidth()) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
@@ -267,26 +278,42 @@ fun PayrollScreen(state: AppState) {
             var name by remember { mutableStateOf("") }
             var salary by remember { mutableStateOf("") }
             var diia by remember { mutableStateOf(false) }
+            var fop by remember { mutableStateOf(false) }
+            var esvRate by remember { mutableStateOf("") }
             QCard(Modifier.fillMaxWidth()) {
                 Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
                     QTextField(name, { name = it }, S.empName, Modifier.fillMaxWidth())
                     QTextField(salary, { salary = filterDecimalInput(it) }, S.empSalary, Modifier.fillMaxWidth(), keyboardType = KeyboardType.Decimal)
                     Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                         FilterChip(
-                            selected = diia, onClick = { diia = !diia }, label = { Text(S.empDiia) },
+                            selected = diia, onClick = { diia = !diia; if (diia) fop = false }, label = { Text(S.empDiia) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = c.heroCyan.copy(alpha = 0.16f), selectedLabelColor = c.heroCyan,
+                                containerColor = c.surfaceHigh, labelColor = c.textMuted,
+                            ),
+                        )
+                        FilterChip(
+                            selected = fop, onClick = { fop = !fop; if (fop) diia = false }, label = { Text(S.empFop) },
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = c.heroCyan.copy(alpha = 0.16f), selectedLabelColor = c.heroCyan,
                                 containerColor = c.surfaceHigh, labelColor = c.textMuted,
                             ),
                         )
                     }
+                    // ФОП сам платить податки — override ставки ЄСВ не застосовується.
+                    if (!fop) QTextField(esvRate, { esvRate = filterDecimalInput(it) }, S.empEsvOverride, Modifier.fillMaxWidth(), keyboardType = KeyboardType.Decimal)
                     Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                         QPrimaryButton(S.post, onClick = {
                             val sal = parseAmount(salary)
+                            val esvOverride = esvRate.trim().takeIf { it.isNotBlank() && !fop }?.let { parseAmount(it) / 100.0 }
                             scope.launch {
                                 state.api.saveEmployee(
                                     state.entity!!.id,
-                                    Employee(id = randomEmpId(), fullName = name.trim(), monthlySalary = roundMoney(sal), diiaCity = diia),
+                                    Employee(
+                                        id = randomEmpId(), fullName = name.trim(), monthlySalary = roundMoney(sal),
+                                        employmentType = if (fop) "fop" else "main", diiaCity = diia,
+                                        sscRateOverride = esvOverride,
+                                    ),
                                 )
                                 adding = false; reload()
                             }
