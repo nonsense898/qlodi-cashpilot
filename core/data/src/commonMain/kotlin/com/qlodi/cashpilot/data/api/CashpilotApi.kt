@@ -91,6 +91,14 @@ class CashpilotApi(private val tokenProvider: TokenProvider = SessionStore) {
             }
         }
 
+    /** Консолідований баланс (метод поточного курсу, з CTA у капіталі). */
+    suspend fun consolidatedBalanceSheet(presentation: String, asOf: String, from: String): ApiResult<ConsolidatedBsView> =
+        apiCall {
+            client.get(ApiConfig.url("/ledger/consolidation/balance-sheet")) {
+                parameter("presentation", presentation); parameter("asOf", asOf); parameter("from", from)
+            }
+        }
+
     /* ── Banking / reconciliation ── */
     suspend fun importBank(eid: String, req: ImportBankRequest): ApiResult<ImportResult> =
         apiCall { client.post(ApiConfig.url("/ledger/entities/$eid/bank/import")) { setBody(req) } }
@@ -103,6 +111,13 @@ class CashpilotApi(private val tokenProvider: TokenProvider = SessionStore) {
 
     suspend fun yearEndClose(eid: String): ApiResult<JournalEntryView> =
         apiCall { client.post(ApiConfig.url("/ledger/entities/$eid/periods/year-end-close")) }
+
+    /* ── FX rates (для консолідації: історичні курси) ── */
+    suspend fun listFxRates(): ApiResult<List<FxRateView>> =
+        apiCall { client.get(ApiConfig.url("/ledger/fx-rates/all")) }
+
+    suspend fun upsertFxRate(req: UpsertFxRateRequest): ApiResult<FxRateView> =
+        apiCall { client.post(ApiConfig.url("/ledger/fx-rates")) { setBody(req) } }
 
     /* ── Податковий движок: ПДВ (Фаза 2) ── */
     suspend fun vatReport(eid: String, from: String, to: String): ApiResult<VatReportView> =

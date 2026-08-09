@@ -132,6 +132,34 @@ data class ConsolidatedPnlView(
 )
 
 @Serializable
+data class UpsertFxRateRequest(
+    val base: String, val quote: String, val rateDate: String, val rate: String, val source: String = "MANUAL",
+)
+
+@Serializable
+data class FxRateView(
+    val id: String, val base: String, val quote: String,
+    val rateDate: String, val rate: String, val source: String,
+)
+
+@Serializable
+data class ConsolidatedBsEntity(
+    val entityId: String, val name: String, val functionalCurrency: String,
+    val closingRate: String, val averageRate: String, val historicalRate: String, val cta: String,
+)
+
+@Serializable
+data class ConsolidatedBsView(
+    val presentationCurrency: String, val asOf: String, val from: String,
+    val method: String = "current_rate",
+    val assets: List<BalanceSheetLine> = emptyList(),
+    val liabilities: List<BalanceSheetLine> = emptyList(),
+    val equity: List<BalanceSheetLine> = emptyList(),
+    val cta: String, val totalAssets: String, val totalLiabilitiesEquity: String,
+    val balanced: Boolean, val entities: List<ConsolidatedBsEntity> = emptyList(),
+)
+
+@Serializable
 data class CashFlowView(
     val from: String, val to: String,
     val operating: String, val investing: String, val financing: String,

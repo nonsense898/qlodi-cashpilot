@@ -22,6 +22,7 @@ class CashStrings {
     var jurisdictionLabel = ""; var entityLabel = ""; var selectLanguage = ""
     var companyGroup = ""; var addCompany = ""; var editCompany = ""; var switchCompany = ""
     var companyName = ""; var currencyLockedHint = ""; var createAction = ""; var saveAction = ""
+    var fxRates = ""; var fxAdd = ""; var fxRateValue = ""; var fxEmpty = ""; var fxHint = ""
     var themeLabel = ""; var themeDark = ""; var themeLight = ""
     // nav
     var navDashboard = ""; var navAccounts = ""; var navJournal = ""; var navBanking = ""
@@ -77,6 +78,7 @@ class CashStrings {
     var yearEndClose = ""; var yearEndCloseMsg = ""
     var pnlTab = ""; var pnlCogs = ""; var pnlGross = ""; var pnlAdmin = ""; var pnlSelling = ""
     var groupTab = ""; var presentationCurrency = ""; var consolidationNote = ""
+    var groupPnl = ""; var groupBalanceSheet = ""; var ctaLabel = ""
     var pnlOtherOpex = ""; var pnlOperating = ""; var pnlOtherIncome = ""; var pnlFinanceCost = ""; var pnlIncomeTax = ""
 }
 
@@ -88,6 +90,8 @@ private fun en() = CashStrings().apply {
     companyGroup = "COMPANY"; addCompany = "Add company"; editCompany = "Edit company"; switchCompany = "Switch company"
     companyName = "Company name"; currencyLockedHint = "Currency locks after the first journal entry."
     createAction = "Create"; saveAction = "Save"
+    fxRates = "FX rates"; fxAdd = "Add rate"; fxRateValue = "Rate"; fxEmpty = "No rates yet"
+    fxHint = "Used to translate other currencies in group reports. 1 base = rate quote."
     themeLabel = "Theme"; themeDark = "Dark"; themeLight = "Light"
     navDashboard = "Dashboard"; navAccounts = "Chart of Accounts"; navJournal = "Journal"; navBanking = "Banking"
     navInvoices = "Invoices (AR)"; navBills = "Bills (AP)"; navTaxes = "Taxes / VAT"; navReports = "Reports"
@@ -141,7 +145,8 @@ private fun en() = CashStrings().apply {
     yearEndClose = "Year-end close"; yearEndCloseMsg = "Zeroes income & expenses into retained earnings (441). A closing entry is created."
     pnlTab = "P&L"; pnlCogs = "Cost of sales"; pnlGross = "Gross profit"; pnlAdmin = "Administrative"; pnlSelling = "Selling"
     groupTab = "Group"; presentationCurrency = "Presentation currency"
-    consolidationNote = "Each entity translated at the current rate, then summed. Not a statutory consolidation (no CTA)."
+    consolidationNote = "P&L summed at the current rate; the balance sheet uses the current-rate method with a CTA in equity (rates from the FX layer, spot as fallback)."
+    groupPnl = "Group P&L"; groupBalanceSheet = "Group balance sheet"; ctaLabel = "Translation adjustment (CTA)"
     pnlOtherOpex = "Other opex"; pnlOperating = "Operating profit"; pnlOtherIncome = "Other income"; pnlFinanceCost = "Finance cost"; pnlIncomeTax = "Income tax"
 }
 
@@ -153,6 +158,8 @@ private fun uk() = CashStrings().apply {
     companyGroup = "КОМПАНІЯ"; addCompany = "Додати компанію"; editCompany = "Редагувати компанію"; switchCompany = "Змінити компанію"
     companyName = "Назва компанії"; currencyLockedHint = "Валюта фіксується після першої проводки."
     createAction = "Створити"; saveAction = "Зберегти"
+    fxRates = "Курси валют"; fxAdd = "Додати курс"; fxRateValue = "Курс"; fxEmpty = "Курсів ще немає"
+    fxHint = "Використовуються для трансляції валют у групових звітах. 1 база = курс котирування."
     themeLabel = "Тема"; themeDark = "Темна"; themeLight = "Світла"
     navDashboard = "Дашборд"; navAccounts = "План рахунків"; navJournal = "Журнал"; navBanking = "Банк"
     navInvoices = "Інвойси (AR)"; navBills = "Рахунки (AP)"; navTaxes = "Податки / ПДВ"; navReports = "Звіти"
@@ -206,7 +213,8 @@ private fun uk() = CashStrings().apply {
     yearEndClose = "Закрити рік"; yearEndCloseMsg = "Обнуляє доходи й витрати в нерозподілений прибуток (441). Створюється closing-проводка."
     pnlTab = "P&L"; pnlCogs = "Собівартість"; pnlGross = "Валовий прибуток"; pnlAdmin = "Адміністративні"; pnlSelling = "Збут"
     groupTab = "Група"; presentationCurrency = "Валюта звіту"
-    consolidationNote = "Кожна юрособа транслюється за поточним курсом і підсумовується. Не повна консолідація (без CTA)."
+    consolidationNote = "P&L підсумовано за поточним курсом; баланс — метод поточного курсу з CTA у капіталі (курси з шару FX, спот як фолбек)."
+    groupPnl = "Груповий P&L"; groupBalanceSheet = "Груповий баланс"; ctaLabel = "Курсова різниця (CTA)"
     pnlOtherOpex = "Інші операційні"; pnlOperating = "Операційний прибуток"; pnlOtherIncome = "Інші доходи"; pnlFinanceCost = "Фінвитрати"; pnlIncomeTax = "Податок на прибуток"
 }
 

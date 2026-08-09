@@ -29,8 +29,15 @@ import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.ui.graphics.Color
 import kotlinx.coroutines.launch
+import androidx.compose.material.icons.filled.CurrencyExchange
 import com.qlodi.cashpilot.AppState
+import com.qlodi.cashpilot.data.api.ApiResult
+import com.qlodi.cashpilot.data.api.FxRateView
 import com.qlodi.cashpilot.data.api.SessionStore
+import com.qlodi.cashpilot.data.api.UpsertFxRateRequest
+import com.qlodi.cashpilot.ui.util.filterDateInput
+import com.qlodi.cashpilot.ui.util.filterDecimalInput
+import com.qlodi.cashpilot.ui.util.todayIsoDate
 import com.qlodi.cashpilot.ui.components.*
 import com.qlodi.cashpilot.ui.i18n.AppLanguage
 import com.qlodi.cashpilot.ui.i18n.LocalLanguage
@@ -50,6 +57,7 @@ fun SettingsScreen(state: AppState) {
     var showAdd by remember { mutableStateOf(false) }
     var showEdit by remember { mutableStateOf(false) }
     var showSwitch by remember { mutableStateOf(false) }
+    var showFx by remember { mutableStateOf(false) }
 
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
         SectionTitle(S.navSettings)
@@ -98,6 +106,8 @@ fun SettingsScreen(state: AppState) {
                 SettingsRow(Icons.Filled.AccountBalanceWallet, S.currencyLabel, trailingText = state.entity?.functionalCurrency ?: "—")
                 RowDivider()
                 SettingsRow(Icons.Filled.Public, S.jurisdictionLabel, trailingText = state.entity?.jurisdiction ?: "—")
+                RowDivider()
+                SettingsRow(Icons.Filled.CurrencyExchange, S.fxRates, showChevron = true, onClick = { showFx = true })
             }
         }
 
@@ -195,6 +205,53 @@ fun SettingsScreen(state: AppState) {
                 modifier = Modifier.fillMaxWidth(),
                 enabled = name.isNotBlank(),
             )
+        }
+    }
+
+    // ── FX rates: historical rates used to translate currencies in group reports ──
+    if (showFx) {
+        var fxList by remember { mutableStateOf<List<FxRateView>>(emptyList()) }
+        var base by remember { mutableStateOf(state.entity?.functionalCurrency ?: "UAH") }
+        var quote by remember { mutableStateOf("USD") }
+        var date by remember { mutableStateOf(todayIsoDate()) }
+        var rate by remember { mutableStateOf("") }
+        var err by remember { mutableStateOf<String?>(null) }
+        suspend fun reload() { fxList = state.api.listFxRates().getOrNull().orEmpty() }
+        LaunchedEffect(Unit) { reload() }
+        CompanyDialogShell(S.fxRates, onDismiss = { showFx = false }) {
+            Text(S.fxHint, color = c.textMuted, style = MaterialTheme.typography.bodySmall)
+            PillRow(S.currencyLabel, CURRENCIES, base) { base = it }
+            PillRow(S.presentationCurrency, CURRENCIES, quote) { quote = it }
+            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                Box(Modifier.weight(1f)) { QTextField(date, { date = filterDateInput(it) }, S.date, Modifier.fillMaxWidth()) }
+                Box(Modifier.weight(1f)) { QTextField(rate, { rate = filterDecimalInput(it) }, S.fxRateValue, Modifier.fillMaxWidth()) }
+            }
+            err?.let { Text(it, color = c.danger, style = MaterialTheme.typography.bodySmall) }
+            QPrimaryButton(
+                S.fxAdd,
+                onClick = {
+                    scope.launch {
+                        err = null
+                        when (val r = state.api.upsertFxRate(UpsertFxRateRequest(base, quote, date.trim(), rate.trim()))) {
+                            is ApiResult.Ok -> { rate = ""; reload() }
+                            is ApiResult.Err -> err = r.error.message
+                        }
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = base != quote && rate.isNotBlank(),
+            )
+            if (fxList.isEmpty()) {
+                Text(S.fxEmpty, color = c.textMuted, style = MaterialTheme.typography.bodySmall)
+            } else {
+                fxList.take(12).forEach { fr ->
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text("${fr.base}→${fr.quote}", color = c.textPrimary, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.width(88.dp))
+                        Text(fr.rateDate, color = c.textMuted, style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(1f))
+                        Text(fr.rate, color = c.heroCyan, style = MaterialTheme.typography.bodyMedium)
+                    }
+                }
+            }
         }
     }
 }
