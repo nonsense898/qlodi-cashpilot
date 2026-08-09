@@ -11,8 +11,11 @@ import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Public
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -47,6 +50,7 @@ import com.qlodi.cashpilot.ui.theme.Radii
 import com.qlodi.cashpilot.ui.theme.Spacing
 import com.qlodi.cashpilot.ui.theme.ThemeState
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(state: AppState) {
     val c = CashpilotColors
@@ -54,6 +58,8 @@ fun SettingsScreen(state: AppState) {
     val lang = LocalLanguage.current
     val scope = rememberCoroutineScope()
     var langPicker by remember { mutableStateOf(false) }
+    var currencySheet by remember { mutableStateOf(false) }
+    var currencyErr by remember { mutableStateOf<String?>(null) }
     var showAdd by remember { mutableStateOf(false) }
     var showEdit by remember { mutableStateOf(false) }
     var showSwitch by remember { mutableStateOf(false) }
@@ -103,7 +109,7 @@ fun SettingsScreen(state: AppState) {
                 RowDivider()
                 SettingsRow(Icons.Filled.Language, S.language, trailingText = lang.label, showChevron = true, onClick = { langPicker = true })
                 RowDivider()
-                SettingsRow(Icons.Filled.AccountBalanceWallet, S.currencyLabel, trailingText = state.entity?.functionalCurrency ?: "—")
+                SettingsRow(Icons.Filled.AccountBalanceWallet, S.currencyLabel, trailingText = state.entity?.functionalCurrency ?: "—", showChevron = true, onClick = { currencyErr = null; currencySheet = true })
                 RowDivider()
                 SettingsRow(Icons.Filled.Public, S.jurisdictionLabel, trailingText = state.entity?.jurisdiction ?: "—")
                 RowDivider()
@@ -137,6 +143,38 @@ fun SettingsScreen(state: AppState) {
                             Text(if (l == AppLanguage.Ukrainian) "Українська" else "English", color = c.textSecondary, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
                             if (on) Text("✓", color = c.heroCyan, style = MaterialTheme.typography.titleMedium)
                         }
+                    }
+                }
+            }
+        }
+    }
+
+    // ── Currency picker (modal bottom sheet) — changes the active company currency ──
+    if (currencySheet) {
+        val sheetState = rememberModalBottomSheetState()
+        ModalBottomSheet(onDismissRequest = { currencySheet = false }, sheetState = sheetState, containerColor = c.surface) {
+            Column(Modifier.fillMaxWidth().padding(horizontal = Spacing.lg).padding(bottom = Spacing.huge), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+                Text(S.currencyLabel, color = c.textPrimary, style = MaterialTheme.typography.titleMedium)
+                Text(S.currencyLockedHint, color = c.textMuted, style = MaterialTheme.typography.bodySmall)
+                currencyErr?.let { Text(it, color = c.danger, style = MaterialTheme.typography.bodySmall) }
+                Spacer(Modifier.height(Spacing.xs))
+                CURRENCY_OPTIONS.forEach { (code, name) ->
+                    val on = code == state.entity?.functionalCurrency
+                    Row(
+                        Modifier.fillMaxWidth().clip(RoundedCornerShape(Radii.sm))
+                            .background(if (on) c.accentDim else Color.Transparent)
+                            .clickable {
+                                scope.launch {
+                                    val e = state.updateCompany(null, code)
+                                    if (e == null) currencySheet = false else currencyErr = e
+                                }
+                            }
+                            .padding(horizontal = Spacing.md, vertical = Spacing.md),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(code, color = if (on) c.heroCyan else c.textPrimary, style = MaterialTheme.typography.titleSmall, modifier = Modifier.width(56.dp))
+                        Text(name, color = c.textSecondary, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                        if (on) Text("✓", color = c.heroCyan, style = MaterialTheme.typography.titleMedium)
                     }
                 }
             }
@@ -257,6 +295,17 @@ fun SettingsScreen(state: AppState) {
 }
 
 private val CURRENCIES = listOf("UAH", "USD", "EUR", "PLN", "GBP")
+
+private val CURRENCY_OPTIONS = listOf(
+    "UAH" to "Ukrainian hryvnia",
+    "USD" to "US dollar",
+    "EUR" to "Euro",
+    "GBP" to "Pound sterling",
+    "PLN" to "Polish zloty",
+    "CHF" to "Swiss franc",
+    "CAD" to "Canadian dollar",
+    "JPY" to "Japanese yen",
+)
 
 @Composable
 private fun CompanyDialogShell(title: String, onDismiss: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
