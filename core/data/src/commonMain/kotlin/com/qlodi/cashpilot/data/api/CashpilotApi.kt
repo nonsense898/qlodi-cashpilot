@@ -83,6 +83,14 @@ class CashpilotApi(private val tokenProvider: TokenProvider = SessionStore) {
     suspend fun pnl(eid: String, from: String, to: String): ApiResult<PnlView> =
         apiCall { client.get(ApiConfig.url("/ledger/entities/$eid/reports/pnl")) { parameter("from", from); parameter("to", to) } }
 
+    /** Консолідований P&L по всіх юрособах у презентаційній валюті. */
+    suspend fun consolidatedPnl(presentation: String, from: String, to: String): ApiResult<ConsolidatedPnlView> =
+        apiCall {
+            client.get(ApiConfig.url("/ledger/consolidation/pnl")) {
+                parameter("presentation", presentation); parameter("from", from); parameter("to", to)
+            }
+        }
+
     /* ── Banking / reconciliation ── */
     suspend fun importBank(eid: String, req: ImportBankRequest): ApiResult<ImportResult> =
         apiCall { client.post(ApiConfig.url("/ledger/entities/$eid/bank/import")) { setBody(req) } }

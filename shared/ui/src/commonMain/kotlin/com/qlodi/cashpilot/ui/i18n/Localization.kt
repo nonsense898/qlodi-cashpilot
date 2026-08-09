@@ -76,6 +76,7 @@ class CashStrings {
     var cfNetChange = ""; var cfOpening = ""; var cfClosing = ""
     var yearEndClose = ""; var yearEndCloseMsg = ""
     var pnlTab = ""; var pnlCogs = ""; var pnlGross = ""; var pnlAdmin = ""; var pnlSelling = ""
+    var groupTab = ""; var presentationCurrency = ""; var consolidationNote = ""
     var pnlOtherOpex = ""; var pnlOperating = ""; var pnlOtherIncome = ""; var pnlFinanceCost = ""; var pnlIncomeTax = ""
 }
 
@@ -139,6 +140,8 @@ private fun en() = CashStrings().apply {
     cfNetChange = "Net change"; cfOpening = "Opening cash"; cfClosing = "Closing cash"
     yearEndClose = "Year-end close"; yearEndCloseMsg = "Zeroes income & expenses into retained earnings (441). A closing entry is created."
     pnlTab = "P&L"; pnlCogs = "Cost of sales"; pnlGross = "Gross profit"; pnlAdmin = "Administrative"; pnlSelling = "Selling"
+    groupTab = "Group"; presentationCurrency = "Presentation currency"
+    consolidationNote = "Each entity translated at the current rate, then summed. Not a statutory consolidation (no CTA)."
     pnlOtherOpex = "Other opex"; pnlOperating = "Operating profit"; pnlOtherIncome = "Other income"; pnlFinanceCost = "Finance cost"; pnlIncomeTax = "Income tax"
 }
 
@@ -202,6 +205,8 @@ private fun uk() = CashStrings().apply {
     cfNetChange = "Чиста зміна"; cfOpening = "Кошти на початок"; cfClosing = "Кошти на кінець"
     yearEndClose = "Закрити рік"; yearEndCloseMsg = "Обнуляє доходи й витрати в нерозподілений прибуток (441). Створюється closing-проводка."
     pnlTab = "P&L"; pnlCogs = "Собівартість"; pnlGross = "Валовий прибуток"; pnlAdmin = "Адміністративні"; pnlSelling = "Збут"
+    groupTab = "Група"; presentationCurrency = "Валюта звіту"
+    consolidationNote = "Кожна юрособа транслюється за поточним курсом і підсумовується. Не повна консолідація (без CTA)."
     pnlOtherOpex = "Інші операційні"; pnlOperating = "Операційний прибуток"; pnlOtherIncome = "Інші доходи"; pnlFinanceCost = "Фінвитрати"; pnlIncomeTax = "Податок на прибуток"
 }
 

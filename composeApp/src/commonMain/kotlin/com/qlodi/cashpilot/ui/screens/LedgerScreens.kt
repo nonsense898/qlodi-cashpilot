@@ -324,8 +324,12 @@ fun ReportsScreen(state: AppState) {
     var tab by remember { mutableStateOf(0) }
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.lg)) {
         SectionTitle(S.navReports, S.reportsSub)
+        val tabs = buildList {
+            add(S.trialBalance); add(S.balanceSheet); add(S.cashFlow); add(S.pnlTab)
+            if (state.entities.size > 1) add(S.groupTab)
+        }
         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-            listOf(S.trialBalance, S.balanceSheet, S.cashFlow, S.pnlTab).forEachIndexed { i, t ->
+            tabs.forEachIndexed { i, t ->
                 val on = i == tab
                 Box(Modifier.clip(RoundedCornerShape(Radii.pill)).background(if (on) c.accentDim else c.surface)
                     .border(1.dp, if (on) c.heroCyan else c.border, RoundedCornerShape(Radii.pill))
@@ -338,7 +342,8 @@ fun ReportsScreen(state: AppState) {
             0 -> TrialBalanceCard(state.trialBalance)
             1 -> BalanceSheetCard(state.balanceSheet)
             2 -> CashFlowCard(state.cashFlow)
-            else -> PnlReportCard(state.pnl)
+            3 -> PnlReportCard(state.pnl)
+            else -> GroupReportCard(state)
         }
         Spacer(Modifier.height(Spacing.huge))
     }
@@ -382,6 +387,63 @@ private fun PnlReportCard(p: PnlView?) {
             CfRow(S.pnlIncomeTax, p.incomeTax, c.textSecondary)
             Box(Modifier.fillMaxWidth().height(1.dp).background(c.border))
             CfRow(S.netProfit, p.netProfit, if ((p.netProfit.toDoubleOrNull() ?: 0.0) >= 0) c.positive else c.danger, bold = true)
+        }
+    }
+}
+
+@Composable
+private fun GroupReportCard(state: AppState) {
+    val c = CashpilotColors
+    val S = LocalStrings.current
+    val currencies = listOf("UAH", "USD", "EUR", "PLN", "GBP")
+    var cur by remember { mutableStateOf(state.entity?.functionalCurrency ?: "USD") }
+    var data by remember { mutableStateOf<ConsolidatedPnlView?>(null) }
+    var loading by remember { mutableStateOf(false) }
+    var err by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(cur, state.entities.size) {
+        loading = true; err = null
+        when (val r = state.api.consolidatedPnl(cur, "1970-01-01", "2100-12-31")) {
+            is ApiResult.Ok -> { data = r.value }
+            is ApiResult.Err -> { data = null; err = r.error.message }
+        }
+        loading = false
+    }
+
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
+        // Presentation-currency selector.
+        Text(S.presentationCurrency, color = c.textMuted, style = MaterialTheme.typography.labelMedium)
+        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+            currencies.forEach { opt ->
+                val on = opt == cur
+                Box(
+                    Modifier.clip(RoundedCornerShape(Radii.sm)).background(if (on) c.heroCyan else c.surfaceElevated)
+                        .clickable { cur = opt }.padding(horizontal = Spacing.md, vertical = Spacing.sm),
+                ) { Text(opt, color = if (on) c.onAccent else c.textSecondary, style = MaterialTheme.typography.labelLarge) }
+            }
+        }
+        Text(S.consolidationNote, color = c.textMuted, style = MaterialTheme.typography.bodySmall)
+
+        when {
+            loading -> LoadingState()
+            data != null -> {
+                PnlReportCard(data!!.total)
+                // Per-entity contributions (name · currency · rate → net).
+                QCard(Modifier.fillMaxWidth()) {
+                    Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                        data!!.entities.forEach { e ->
+                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                Column(Modifier.weight(1f)) {
+                                    Text(e.name, color = c.textPrimary, style = MaterialTheme.typography.bodyMedium)
+                                    Text("${e.functionalCurrency} · ×${e.fxRate}", color = c.textMuted, style = MaterialTheme.typography.labelSmall)
+                                }
+                                NumberText(money(e.pnl.netProfit), color = c.textSecondary, size = 13)
+                            }
+                        }
+                    }
+                }
+            }
+            else -> EmptyState(Icons.Filled.Assessment, S.noData, err ?: S.addEntries)
         }
     }
 }

@@ -118,6 +118,20 @@ data class PnlView(
 )
 
 @Serializable
+data class ConsolidatedEntityPnl(
+    val entityId: String, val name: String, val functionalCurrency: String,
+    val fxRate: String, val pnl: PnlView,
+)
+
+@Serializable
+data class ConsolidatedPnlView(
+    val presentationCurrency: String, val from: String, val to: String,
+    val method: String = "closing_rate",
+    val entities: List<ConsolidatedEntityPnl> = emptyList(),
+    val total: PnlView,
+)
+
+@Serializable
 data class CashFlowView(
     val from: String, val to: String,
     val operating: String, val investing: String, val financing: String,
