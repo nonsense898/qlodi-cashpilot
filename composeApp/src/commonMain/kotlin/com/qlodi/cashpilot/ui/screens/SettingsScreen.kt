@@ -221,22 +221,18 @@ fun SettingsScreen(state: AppState) {
         }
     }
 
-    // ── Edit active company (rename + currency, locked once entries exist) ──
+    // ── Edit active company (rename only; currency has its own picker on the Currency row) ──
     if (showEdit) {
-        val cur0 = state.entity?.functionalCurrency ?: "UAH"
         var name by remember { mutableStateOf(state.entity?.name ?: "") }
-        var cur by remember { mutableStateOf(cur0) }
         var err by remember { mutableStateOf<String?>(null) }
         CompanyDialogShell(S.editCompany, onDismiss = { showEdit = false }) {
             QTextField(name, { name = it }, S.companyName, Modifier.fillMaxWidth())
-            PillRow(S.currencyLabel, CURRENCIES, cur) { cur = it }
-            Text(S.currencyLockedHint, color = c.textMuted, style = MaterialTheme.typography.bodySmall)
             err?.let { Text(it, color = c.danger, style = MaterialTheme.typography.bodySmall) }
             QPrimaryButton(
                 S.saveAction,
                 onClick = {
                     scope.launch {
-                        err = state.updateCompany(name.trim(), cur.takeIf { it != cur0 })
+                        err = state.updateCompany(name.trim(), null)
                         if (err == null) showEdit = false
                     }
                 },
