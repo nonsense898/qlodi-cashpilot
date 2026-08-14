@@ -38,6 +38,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -76,6 +77,9 @@ import com.qlodi.cashpilot.ui.theme.Motion
 @Composable
 fun App() = CashpilotTheme {
     val state = remember { AppState() }
+    // Відновлена сесія (після reload) робить loggedIn=true, але дані підтягує
+    // лише bootstrap() — інакше залогінена людина побачила б порожній дашборд.
+    LaunchedEffect(Unit) { if (state.loggedIn) state.bootstrap() }
     CompositionLocalProvider(
         LocalStrings provides stringsFor(state.language),
         LocalLanguage provides state.language,

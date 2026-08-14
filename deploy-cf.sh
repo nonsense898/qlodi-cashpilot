@@ -44,7 +44,7 @@ PY
 
 # Проєкт створюється лише раз; deploy у неіснуючий проєкт падає з помилкою.
 if ! npx --yes wrangler@latest pages project list 2>/dev/null | grep -qw "$PROJECT"; then
-  echo "▶ Creating Pages project $PROJECT…"
+  echo "▶ Creating Pages project ${PROJECT}…"
   npx --yes wrangler@latest pages project create "$PROJECT" --production-branch main
 fi
 

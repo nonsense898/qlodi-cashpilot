@@ -1,6 +1,9 @@
 package com.qlodi.cashpilot.data.api
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 /** Конфіг REST-бекенду (спільний qlodi-backend). */
 object ApiConfig {
@@ -51,11 +54,23 @@ object SessionStore : TokenProvider {
     /** Колбек оновлення токена через /auth/refresh (виставляється з ApiClient-шару). */
     var refresher: (suspend (String) -> Pair<String, String>?)? = null
 
+    private val persistJson = Json { ignoreUnknownKeys = true }
+
+    // Відновлюємо збережену сесію на старті: інакше перезавантаження сторінки
+    // стирало in-memory токен і викидало залогінену людину на екран входу.
+    // init виконується під час першого доступу до SessionStore — раніше, ніж
+    // AppState читає isLoggedIn.
+    init { restore() }
+
     fun set(idToken: String, refreshToken: String, uid: String, email: String) {
         this.idToken = idToken; this.refreshToken = refreshToken; this.uid = uid; this.email = email
+        persist()
     }
 
-    fun clear() { idToken = null; refreshToken = null; uid = null; email = null }
+    fun clear() {
+        idToken = null; refreshToken = null; uid = null; email = null
+        persist()
+    }
 
     val isLoggedIn: Boolean get() = idToken != null
 
@@ -64,6 +79,23 @@ object SessionStore : TokenProvider {
         val rt = refreshToken ?: return null
         val pair = refresher?.invoke(rt) ?: return null
         idToken = pair.first; refreshToken = pair.second
+        persist()
         return idToken
+    }
+
+    /** Зберегти поточну сесію у платформене сховище (localStorage на вебі). */
+    private fun persist() {
+        val t = idToken; val rt = refreshToken; val u = uid; val e = email
+        saveSessionJson(
+            if (t != null && rt != null && u != null && e != null)
+                persistJson.encodeToString(UserSession(uid = u, email = e, idToken = t, refreshToken = rt))
+            else null,
+        )
+    }
+
+    private fun restore() {
+        val raw = loadSessionJson() ?: return
+        val s = runCatching { persistJson.decodeFromString<UserSession>(raw) }.getOrNull() ?: return
+        idToken = s.idToken; refreshToken = s.refreshToken; uid = s.uid; email = s.email
     }
 }
