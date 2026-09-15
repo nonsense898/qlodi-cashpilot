@@ -40,6 +40,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -80,9 +81,12 @@ fun App() = CashpilotTheme {
         LocalStrings provides stringsFor(state.language),
         LocalLanguage provides state.language,
     ) {
+    LaunchedEffect(Unit) { state.tryDemo() }
     Box(Modifier.fillMaxSize().background(CashpilotColors.background)) {
         Crossfade(targetState = state.loggedIn, animationSpec = Motion.emphasized(), label = "auth-gate") { loggedIn ->
-            if (!loggedIn) {
+            if (!loggedIn && state.demoChecking) {
+                Box(Modifier.fillMaxSize())
+            } else if (!loggedIn) {
                 AuthScreen(state)
             } else {
                 BoxWithConstraints(Modifier.fillMaxSize()) {
