@@ -471,7 +471,11 @@ fun InvoicesScreen(state: AppState) {
 
         if (list.isNotEmpty()) {
             Row(horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
-                InvoiceStat(t("Не оплачено", "Outstanding"), formatMoney(open0.sumOf { it.total - it.amountPaid }, currency), Modifier.weight(1f))
+                // Invoices can be in a different currency than the company: sum per invoice currency.
+                val outstanding = open0.groupBy { it.currency }.entries
+                    .joinToString(" · ") { (cur, l) -> formatMoney(l.sumOf { it.total - it.amountPaid }, cur) }
+                    .ifBlank { formatMoney(0.0, currency) }
+                InvoiceStat(t("Не оплачено", "Outstanding"), outstanding, Modifier.weight(1f))
                 InvoiceStat(t("Прострочено", "Overdue"), open0.count { it.status == "Overdue" }.toString(), Modifier.weight(1f))
                 InvoiceStat(t("Оплачено", "Paid"), list.count { it.status == "Paid" }.toString(), Modifier.weight(1f))
             }
