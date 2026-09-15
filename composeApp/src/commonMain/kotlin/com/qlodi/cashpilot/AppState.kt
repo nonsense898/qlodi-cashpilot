@@ -29,6 +29,9 @@ class AppState {
     var pnl by mutableStateOf<PnlView?>(null); private set
     var periods by mutableStateOf<List<PeriodView>>(emptyList()); private set
     var bankTxns by mutableStateOf<List<BankTxnView>>(emptyList()); private set
+    /** Clients and invoices shared with Qlodi Business. */
+    var clients by mutableStateOf<List<ClientDto>>(emptyList()); private set
+    var invoices by mutableStateOf<List<InvoiceDto>>(emptyList()); private set
 
     /** asOf для звітів — «усе» (включає всі проводки). */
     private val asOf = "2100-12-31"
@@ -70,7 +73,7 @@ class AppState {
         val e = list.firstOrNull() ?: api.createEntity(CreateEntityRequest(name = "Моя компанія", jurisdiction = "UA")).getOrNull()
             ?.also { entities = listOf(it) }
         entity = e
-        if (e != null) { reloadAccounts(); reloadEntries(); reloadReports(); reloadPeriods(); reloadBank() }
+        if (e != null) { reloadAccounts(); reloadEntries(); reloadReports(); reloadPeriods(); reloadBank(); reloadBilling() }
         busy = false
     }
 
@@ -79,7 +82,7 @@ class AppState {
         if (entity?.id == id) return
         entity = entities.firstOrNull { it.id == id } ?: return
         busy = true
-        reloadAccounts(); reloadEntries(); reloadReports(); reloadPeriods(); reloadBank()
+        reloadAccounts(); reloadEntries(); reloadReports(); reloadPeriods(); reloadBank(); reloadBilling()
         busy = false
     }
 
@@ -155,6 +158,69 @@ class AppState {
         if (api.setPeriodStatus(eid, id, action) is ApiResult.Ok) reloadPeriods()
     }
 
+    suspend fun reloadBilling() {
+        clients = api.listClients().getOrNull().orEmpty()
+        invoices = api.listInvoices().getOrNull().orEmpty().sortedByDescending { it.issueDate }
+    }
+
+    /**
+     * Invoices of the active company. Invoices without a company (made in Business) belong to the
+     * first company — that is where the ledger bridge posts them.
+     */
+    fun invoicesForEntity(): List<InvoiceDto> {
+        val e = entity ?: return emptyList()
+        val first = entities.firstOrNull()?.id
+        return invoices.filter { it.entityId == e.id || (it.entityId == null && e.id == first) }
+    }
+
+    /**
+     * Create a shared invoice for the active company and issue it (ledger entry) or send it (+ e-mail).
+     * Reuses a client with the same name, otherwise creates one. null on success, else an error code.
+     */
+    suspend fun createInvoice(
+        clientName: String, email: String, issueDate: String, description: String,
+        net: Double, vatRate: Double, send: Boolean,
+    ): String? {
+        val e = entity ?: return "no_entity"
+        val name = clientName.trim()
+        val existing = clients.firstOrNull { it.name.equals(name, ignoreCase = true) && it.status == "Active" }
+        if (send && (existing?.billingEmail ?: email).isBlank()) return "email_required"
+        val cl = existing ?: when (val r = api.createClient(
+            ClientDto(id = newId(), name = name, billingEmail = email.trim(), currency = e.functionalCurrency),
+        )) {
+            is ApiResult.Ok -> r.value
+            is ApiResult.Err -> return friendly(r.error)
+        }
+        val id = newId()
+        val draft = InvoiceDto(
+            id = id, clientId = cl.id, issueDate = issueDate, dueDate = plusDaysIso(issueDate, cl.paymentTermsDays),
+            currency = e.functionalCurrency, source = "Manual", entityId = e.id,
+            lines = listOf(InvoiceLineDto(id = newId(), invoiceId = id, description = description.ifBlank { "Services" },
+                unitPrice = net, amount = net, taxRate = vatRate)),
+        )
+        val created = when (val r = api.createInvoice(draft)) {
+            is ApiResult.Ok -> r.value
+            is ApiResult.Err -> return friendly(r.error)
+        }
+        val done = if (send) api.sendInvoice(created.id) else api.issueInvoice(created.id)
+        if (done is ApiResult.Err) return friendly(done.error)
+        reloadBilling(); reloadEntries(); reloadReports(); reloadPeriods()
+        return null
+    }
+
+    suspend fun issueInvoice(inv: InvoiceDto, send: Boolean): String? =
+        afterInvoiceCall(if (send) api.sendInvoice(inv.id) else api.issueInvoice(inv.id))
+
+    suspend fun markInvoicePaid(inv: InvoiceDto): String? =
+        afterInvoiceCall(api.payInvoice(inv.id, (inv.total - inv.amountPaid).coerceAtLeast(0.0)))
+
+    suspend fun revertInvoicePayment(inv: InvoiceDto): String? = afterInvoiceCall(api.unpayInvoice(inv.id))
+
+    private suspend fun afterInvoiceCall(r: ApiResult<InvoiceDto>): String? = when (r) {
+        is ApiResult.Ok -> { reloadBilling(); reloadEntries(); reloadReports(); null }
+        is ApiResult.Err -> friendly(r.error)
+    }
+
     /** Перший активний рахунок із заданим subtype (для інвойсів/білів). */
     fun accBySub(sub: String): AccountView? = accounts.firstOrNull { it.subtype == sub && it.isActive }
 
@@ -179,6 +245,7 @@ class AppState {
         SessionStore.clear()
         loggedIn = false; entity = null; accounts = emptyList(); entries = emptyList()
         trialBalance = null; balanceSheet = null
+        clients = emptyList(); invoices = emptyList()
     }
 
     // Повертаємо КОД помилки (UI локалізує через CashStrings.errorText); невідоме — raw-меседж.
@@ -191,4 +258,29 @@ class AppState {
             else -> e.message
         }
     }
+}
+
+private fun newId(): String = buildString { repeat(24) { append("0123456789abcdef"[kotlin.random.Random.nextInt(16)]) } }
+
+/** ISO date + n days (proleptic Gregorian, no timezone involved). */
+private fun plusDaysIso(iso: String, days: Int): String {
+    val p = iso.take(10).split("-")
+    val y = p.getOrNull(0)?.toIntOrNull() ?: return iso
+    val m = p.getOrNull(1)?.toIntOrNull() ?: return iso
+    val d = p.getOrNull(2)?.toIntOrNull() ?: return iso
+    val yy = if (m <= 2) y - 1 else y
+    val era = (if (yy >= 0) yy else yy - 399) / 400
+    val yoe = yy - era * 400
+    val doy = (153 * ((m + 9) % 12) + 2) / 5 + d - 1
+    val doe = yoe * 365 + yoe / 4 - yoe / 100 + doy
+    val z = era * 146097L + doe - 719468 + days + 719468
+    val era2 = (if (z >= 0) z else z - 146096) / 146097
+    val doe2 = z - era2 * 146097
+    val yoe2 = (doe2 - doe2 / 1460 + doe2 / 36524 - doe2 / 146096) / 365
+    val doy2 = doe2 - (365 * yoe2 + yoe2 / 4 - yoe2 / 100)
+    val mp = (5 * doy2 + 2) / 153
+    val day = doy2 - (153 * mp + 2) / 5 + 1
+    val month = if (mp < 10) mp + 3 else mp - 9
+    val year = yoe2 + era2 * 400 + if (month <= 2) 1 else 0
+    return "${year.toString().padStart(4, '0')}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}"
 }
