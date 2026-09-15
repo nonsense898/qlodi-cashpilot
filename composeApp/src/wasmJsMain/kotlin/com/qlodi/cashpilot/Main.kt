@@ -18,6 +18,9 @@ fun main() {
         ?.takeIf { it.isNotBlank() }
         ?.let { com.qlodi.cashpilot.data.api.ApiConfig.baseUrl = decodeURIComponent(it) }
 
+    // Demo Day: автовхід у demo-акаунт лише на /demo (звичайна адреса — екран входу).
+    com.qlodi.cashpilot.data.api.ApiConfig.demoRequested = window.location.pathname.trimEnd('/') == "/demo"
+
     ComposeViewport(
         viewportContainer = document.getElementById("composeRoot")!!,
         configure = { isA11YEnabled = false },
