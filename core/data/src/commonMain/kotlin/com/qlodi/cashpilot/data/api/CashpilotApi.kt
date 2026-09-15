@@ -35,6 +35,8 @@ class CashpilotApi(private val tokenProvider: TokenProvider = SessionStore) {
     suspend fun login(email: String, password: String): ApiResult<UserSession> =
         apiCall { client.post(ApiConfig.url("/auth/login")) { setBody(AuthCredentials(email, password)) } }
 
+    suspend fun demoStatus(): ApiResult<DemoStatus> = apiCall { client.get(ApiConfig.url("/demo/status")) }
+
     /** Сесія demo-акаунта, поки в admin.qlodi.app увімкнено демо-режим (інакше 404). */
     suspend fun demoSession(): ApiResult<UserSession> =
         apiCall { client.get(ApiConfig.url("/demo/session")) { parameter("app", "cashpilot") } }

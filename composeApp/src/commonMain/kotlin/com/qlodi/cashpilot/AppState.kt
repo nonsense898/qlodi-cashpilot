@@ -58,9 +58,29 @@ class AppState {
         demoChecking = false
         if (s != null && !loggedIn) {
             SessionStore.set(s.idToken, s.refreshToken, s.uid, s.email)
+            demoExpiresInMs = s.demoExpiresInMs
             loggedIn = true
             bootstrap()
         }
+    }
+
+    /** Мс до кінця демо-вікна на момент входу; null — звичайна сесія. */
+    private var demoExpiresInMs: Long? = null
+
+    /**
+     * Демо-сесія: вихід, коли минули години демо (монотонний таймер — працює й офлайн)
+     * або щойно адмін вимкнув демо (перевірка раз на хвилину). Сесія CashPilot живе лише в пам'яті.
+     */
+    suspend fun watchDemo() {
+        val totalMs = demoExpiresInMs ?: return
+        val start = kotlin.time.TimeSource.Monotonic.markNow()
+        while (loggedIn) {
+            val leftMs = totalMs - start.elapsedNow().inWholeMilliseconds
+            if (leftMs <= 0) break
+            kotlinx.coroutines.delay(minOf(60_000L, leftMs))
+            if (api.demoStatus().getOrNull()?.active == false) break
+        }
+        if (loggedIn && demoExpiresInMs != null) logout()
     }
 
     suspend fun login(email: String, password: String) = auth { api.login(email, password) }
@@ -258,6 +278,7 @@ class AppState {
 
     fun logout() {
         SessionStore.clear()
+        demoExpiresInMs = null
         loggedIn = false; entity = null; accounts = emptyList(); entries = emptyList()
         trialBalance = null; balanceSheet = null
         clients = emptyList(); invoices = emptyList()
