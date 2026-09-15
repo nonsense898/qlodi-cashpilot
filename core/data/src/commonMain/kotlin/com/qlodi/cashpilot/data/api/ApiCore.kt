@@ -9,6 +9,8 @@ object ApiConfig {
     const val REQUEST_TIMEOUT_MS: Long = 30_000
     const val CONNECT_TIMEOUT_MS: Long = 15_000
     var onUnauthorized: (() -> Unit)? = null
+    /** Demo Day: сторінку відкрито на /demo — лише тоді пробуємо демо-вхід. */
+    var demoRequested: Boolean = false
 
     fun url(path: String): String {
         val p = if (path.startsWith("/")) path else "/$path"

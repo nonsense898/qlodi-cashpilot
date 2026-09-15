@@ -49,7 +49,7 @@ class AppState {
     fun toggleLanguage() = setLanguage(if (language == AppLanguage.Ukrainian) AppLanguage.English else AppLanguage.Ukrainian)
 
     /** Поки перевіряємо демо-режим — не показуємо екран входу (без «блимання»). */
-    var demoChecking by mutableStateOf(!SessionStore.isLoggedIn); private set
+    var demoChecking by mutableStateOf(!SessionStore.isLoggedIn && ApiConfig.demoRequested); private set
 
     /** Demo Day: якщо в адмінці увімкнено демо — одразу входимо в demo-акаунт. Один раз на завантаження сторінки. */
     suspend fun tryDemo() {
