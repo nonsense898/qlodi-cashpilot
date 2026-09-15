@@ -82,6 +82,7 @@ fun App() = CashpilotTheme {
         LocalLanguage provides state.language,
     ) {
     LaunchedEffect(Unit) { state.tryDemo() }
+    LaunchedEffect(state.loggedIn) { if (state.loggedIn) state.watchDemo() }
     Box(Modifier.fillMaxSize().background(CashpilotColors.background)) {
         Crossfade(targetState = state.loggedIn, animationSpec = Motion.emphasized(), label = "auth-gate") { loggedIn ->
             if (!loggedIn && state.demoChecking) {

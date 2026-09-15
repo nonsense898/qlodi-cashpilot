@@ -20,7 +20,12 @@ data class AuthCredentials(val email: String, val password: String, val name: St
 data class UserSession(
     val uid: String, val email: String,
     val idToken: String, val refreshToken: String,
+    /** Лише демо-сесія: скільки мс лишилось до кінця демо-вікна. */
+    val demoExpiresInMs: Long? = null,
 )
+
+@Serializable
+data class DemoStatus(val active: Boolean = false, val expiresInMs: Long = 0)
 
 @Serializable
 data class RefreshRequest(val refreshToken: String)
