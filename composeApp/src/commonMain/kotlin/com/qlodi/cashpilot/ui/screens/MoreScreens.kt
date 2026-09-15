@@ -22,6 +22,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.input.KeyboardType
 import com.qlodi.cashpilot.AppState
@@ -431,24 +432,201 @@ fun PeriodsScreen(state: AppState) {
 
 @Composable
 fun InvoicesScreen(state: AppState) {
+    val c = CashpilotColors
     val S = LocalStrings.current
-    DocScreen(
-    state, title = S.navInvoices, subtitle = S.invoicesSub,
-    counterpartyLabel = S.client, touchSubtype = "AR", ctaLabel = S.invoiceBtn,
-    emptyIcon = Icons.AutoMirrored.Filled.ReceiptLong, emptyTitle = S.noInvoices,
-) { date, who, net, vat ->
-    val ar = state.accBySub("AR") ?: return@DocScreen "Немає рахунку AR"
-    val rev = state.accBySub("REVENUE") ?: return@DocScreen "Немає рахунку доходу"
-    // Реалізація (перша подія): ПДВ-зобов'язання одразу на 6411; 643 — лише аванси.
-    val vatAcc = state.accBySub("VAT_PAYABLE") ?: state.accBySub("VAT_OUTPUT_TRANSIT")
-    val total = net + vat
-    val lines = buildList {
-        add(JournalLineRequest(ar.id, Direction.DEBIT, moneyString(total)))
-        add(JournalLineRequest(rev.id, Direction.CREDIT, moneyString(net)))
-        if (vat > 0 && vatAcc != null) add(JournalLineRequest(vatAcc.id, Direction.CREDIT, moneyString(vat)))
+    val uk = LocalLanguage.current == AppLanguage.Ukrainian
+    fun t(ua: String, en: String) = if (uk) ua else en
+    val scope = rememberCoroutineScope()
+    val uri = LocalUriHandler.current
+    var open by remember { mutableStateOf(false) }
+    var err by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(state.entity?.id) { state.reloadBilling() }
+
+    val list = state.invoicesForEntity()
+    val currency = state.entity?.functionalCurrency ?: "UAH"
+    fun clientName(id: String) = state.clients.firstOrNull { it.id == id }?.name ?: "—"
+    // AR entries posted straight into the journal before invoices were shared: no invoice behind them.
+    val arIds = state.accounts.filter { it.subtype == "AR" }.map { it.id }.toSet()
+    val legacy = state.entries.filter { e ->
+        e.source == EntrySource.AR && e.description?.startsWith("Invoice ") != true && e.lines.any { it.accountId in arIds }
     }
-    state.post(PostEntryRequest(entryDate = date, description = "${S.invoiceBtn} · $who", source = EntrySource.AR, lines = lines))
+    val open0 = list.filter { it.status != "Draft" && it.status != "Void" && it.total - it.amountPaid > 0.005 }
+
+    fun run(block: suspend () -> String?) { scope.launch { err = block() } }
+
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.lg)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            SectionTitle(S.navInvoices, t("Спільні з Qlodi Business · статуси й оплати", "Shared with Qlodi Business · statuses and payments"))
+            Spacer(Modifier.weight(1f))
+            if (open) QTonalButton(S.close, { open = false }) else QPrimaryButton(S.invoiceBtn, { open = true })
+        }
+        err?.let { Text(invoiceError(it, uk), color = c.danger, style = MaterialTheme.typography.bodySmall) }
+
+        if (open) SharedInvoiceForm(state.clients, currency, uk) { name, email, date, desc, net, vat, send ->
+            scope.launch {
+                err = state.createInvoice(name, email, date, desc, net, vat, send)
+                if (err == null) open = false
+            }
+        }
+
+        if (list.isNotEmpty()) {
+            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
+                InvoiceStat(t("Не оплачено", "Outstanding"), formatMoney(open0.sumOf { it.total - it.amountPaid }, currency), Modifier.weight(1f))
+                InvoiceStat(t("Прострочено", "Overdue"), open0.count { it.status == "Overdue" }.toString(), Modifier.weight(1f))
+                InvoiceStat(t("Оплачено", "Paid"), list.count { it.status == "Paid" }.toString(), Modifier.weight(1f))
+            }
+        }
+        if (list.isEmpty() && !open) EmptyState(Icons.AutoMirrored.Filled.ReceiptLong, S.noInvoices, S.createFirst)
+
+        list.forEach { inv ->
+            QCard(Modifier.fillMaxWidth()) {
+                Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                                Text("${inv.number.ifBlank { "—" }} · ${clientName(inv.clientId)}", color = c.textPrimary, style = MaterialTheme.typography.bodyLarge)
+                                val (label, color) = invoiceStatus(inv.status, uk)
+                                QBadge(label, color)
+                            }
+                            Text(
+                                "${inv.issueDate} – ${inv.dueDate}" +
+                                    if (inv.amountPaid > 0) " · ${t("сплачено", "paid")} ${formatMoney(inv.amountPaid, inv.currency)}" else "",
+                                color = c.textMuted, style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
+                        NumberText(formatMoney(inv.total, inv.currency), size = 14)
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm), verticalAlignment = Alignment.CenterVertically) {
+                        if (inv.status == "Draft") {
+                            QTonalButton(t("Виставити", "Issue"), { run { state.issueInvoice(inv, send = false) } })
+                            QTonalButton(t("Надіслати", "Send"), { run { state.issueInvoice(inv, send = true) } })
+                        }
+                        if (inv.status in setOf("Sent", "Viewed", "Overdue", "PartiallyPaid"))
+                            QPrimaryButton(t("Оплачено", "Mark paid"), { run { state.markInvoicePaid(inv) } })
+                        if (inv.amountPaid > 0 && inv.status != "Void")
+                            QTonalButton(t("Відкотити оплату", "Revert payment"), { run { state.revertInvoicePayment(inv) } })
+                        inv.publicToken?.let { token ->
+                            QTextLinkButton(t("PDF / посилання", "PDF / link"), { uri.openUri(state.api.publicInvoiceUrl(token)) })
+                        }
+                    }
+                }
+            }
+        }
+
+        if (legacy.isNotEmpty()) {
+            Text(t("Проводки до спільних інвойсів", "Entries before shared invoices"), color = c.textMuted, style = MaterialTheme.typography.labelMedium)
+            legacy.forEach { e ->
+                QCard(Modifier.fillMaxWidth()) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text(e.counterparty ?: e.description ?: "—", color = c.textSecondary, style = MaterialTheme.typography.bodyMedium)
+                            Text(e.entryDate, color = c.textMuted, style = MaterialTheme.typography.bodySmall)
+                        }
+                        val total = e.lines.filter { it.accountId in arIds }.sumOf { amt(it.amountFunc) }
+                        NumberText(formatMoney(total, e.currency), size = 13)
+                    }
+                }
+            }
+        }
+        Spacer(Modifier.height(Spacing.huge))
+    }
 }
+
+@Composable
+private fun InvoiceStat(label: String, value: String, modifier: Modifier = Modifier) {
+    val c = CashpilotColors
+    QCard(modifier) {
+        Column {
+            Text(label, color = c.textMuted, style = MaterialTheme.typography.labelMedium)
+            Text(value, color = c.textPrimary, style = MaterialTheme.typography.titleMedium)
+        }
+    }
+}
+
+private fun invoiceStatus(status: String, uk: Boolean): Pair<String, androidx.compose.ui.graphics.Color> {
+    val c = CashpilotColors
+    fun t(ua: String, en: String) = if (uk) ua else en
+    return when (status) {
+        "Draft" -> t("Чернетка", "Draft") to c.textMuted
+        "Sent" -> t("Виставлено", "Sent") to c.heroCyan
+        "Viewed" -> t("Переглянуто", "Viewed") to c.heroCyan
+        "PartiallyPaid" -> t("Частково оплачено", "Partially paid") to c.warning
+        "Paid" -> t("Оплачено", "Paid") to c.positive
+        "Overdue" -> t("Прострочено", "Overdue") to c.danger
+        "Void" -> t("Анульовано", "Void") to c.textMuted
+        else -> status to c.textMuted
+    }
+}
+
+private fun invoiceError(code: String, uk: Boolean): String = when (code) {
+    "email_required" -> if (uk) "Щоб надіслати інвойс, вкажіть email клієнта." else "Add the client's e-mail to send the invoice."
+    "no_connection" -> if (uk) "Немає з'єднання із сервером." else "No connection to the server."
+    else -> code
+}
+
+@Composable
+private fun SharedInvoiceForm(
+    clients: List<ClientDto>, currency: String, uk: Boolean,
+    onSubmit: (name: String, email: String, date: String, desc: String, net: Double, vatRate: Double, send: Boolean) -> Unit,
+) {
+    val c = CashpilotColors
+    val S = LocalStrings.current
+    fun t(ua: String, en: String) = if (uk) ua else en
+    var date by remember { mutableStateOf(todayIsoDate()) }
+    var name by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
+    var desc by remember { mutableStateOf("") }
+    var net by remember { mutableStateOf("") }
+    var vatRate by remember { mutableStateOf(20) }   // 20/14/7/0 %, -1 = exempt
+    val netD = roundMoney(parseAmount(net))
+    val vat = if (vatRate > 0) roundMoney(netD * vatRate / 100.0) else 0.0
+    val known = clients.firstOrNull { it.name.equals(name.trim(), ignoreCase = true) }
+
+    QCard(Modifier.fillMaxWidth()) {
+        Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
+                QTextField(date, { date = filterDateInput(it) }, S.date, Modifier.width(150.dp), keyboardType = KeyboardType.Number)
+                QTextField(name, { name = it }, S.client, Modifier.weight(1f))
+            }
+            val active = clients.filter { it.status == "Active" }.take(6)
+            if (active.isNotEmpty()) Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                active.forEach { cl ->
+                    FilterChip(
+                        selected = known?.id == cl.id, onClick = { name = cl.name; email = cl.billingEmail },
+                        label = { Text(cl.name) },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = c.heroCyan.copy(alpha = 0.16f), selectedLabelColor = c.heroCyan,
+                            containerColor = c.surfaceHigh, labelColor = c.textMuted,
+                        ),
+                    )
+                }
+            }
+            if (known == null) QTextField(email, { email = it }, t("Email клієнта", "Client e-mail"), Modifier.fillMaxWidth())
+            QTextField(desc, { desc = it }, t("Опис послуги", "Description"), Modifier.fillMaxWidth())
+            QTextField(net, { net = filterDecimalInput(it) }, S.netAmount, Modifier.fillMaxWidth(), keyboardType = KeyboardType.Decimal)
+            Text(S.vatRate, color = c.textMuted, style = MaterialTheme.typography.labelMedium)
+            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                listOf(20, 14, 7, 0, -1).forEach { r ->
+                    FilterChip(
+                        selected = r == vatRate, onClick = { vatRate = r },
+                        label = { Text(if (r == -1) S.vatExempt else "$r%") },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = c.heroCyan.copy(alpha = 0.16f), selectedLabelColor = c.heroCyan,
+                            containerColor = c.surfaceHigh, labelColor = c.textMuted,
+                        ),
+                    )
+                }
+            }
+            Text("${S.totalWithVat}: ${formatMoney(netD + vat, currency)}  (VAT ${formatMoney(vat, currency)})", color = c.textSecondary, style = MaterialTheme.typography.bodySmall)
+            val ready = netD > 0 && name.isNotBlank()
+            val rate = if (vatRate > 0) vatRate.toDouble() else 0.0
+            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
+                QTonalButton(t("Виставити", "Issue"), { onSubmit(name, email, date.trim(), desc, netD, rate, false) }, Modifier.weight(1f), enabled = ready)
+                QPrimaryButton(t("Надіслати клієнту", "Send to client"), { onSubmit(name, email, date.trim(), desc, netD, rate, true) }, Modifier.weight(1f),
+                    enabled = ready && ((known?.billingEmail ?: email).contains("@")))
+            }
+        }
+    }
 }
 
 @Composable

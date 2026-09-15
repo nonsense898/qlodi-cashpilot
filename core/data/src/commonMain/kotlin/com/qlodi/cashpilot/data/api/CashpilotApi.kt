@@ -138,4 +138,34 @@ class CashpilotApi(private val tokenProvider: TokenProvider = SessionStore) {
 
     suspend fun runPayroll(eid: String, period: String): ApiResult<PayrollRun> =
         apiCall { client.post(ApiConfig.url("/ledger/entities/$eid/payroll/runs")) { setBody(RunPayrollRequest(period)) } }
+
+    /* ── Billing: the same clients & invoices as Qlodi Business (/v1/clients, /v1/invoices) ── */
+    suspend fun listClients(): ApiResult<List<ClientDto>> =
+        apiCall { client.get(ApiConfig.url("/clients")) }
+
+    suspend fun createClient(c: ClientDto): ApiResult<ClientDto> =
+        apiCall { client.post(ApiConfig.url("/clients")) { setBody(c) } }
+
+    suspend fun listInvoices(): ApiResult<List<InvoiceDto>> =
+        apiCall { client.get(ApiConfig.url("/invoices")) }
+
+    suspend fun createInvoice(inv: InvoiceDto): ApiResult<InvoiceDto> =
+        apiCall { client.post(ApiConfig.url("/invoices")) { setBody(inv) } }
+
+    /** Sent + ledger entry, no e-mail. */
+    suspend fun issueInvoice(id: String): ApiResult<InvoiceDto> =
+        apiCall { client.post(ApiConfig.url("/invoices/$id/issue")) }
+
+    /** Sent + ledger entry + e-mail with PDF to the client. */
+    suspend fun sendInvoice(id: String): ApiResult<InvoiceDto> =
+        apiCall { client.post(ApiConfig.url("/invoices/$id/send")) }
+
+    suspend fun payInvoice(id: String, amount: Double): ApiResult<InvoiceDto> =
+        apiCall { client.post(ApiConfig.url("/invoices/$id/pay")) { setBody(InvoicePaymentRequest(amount)) } }
+
+    suspend fun unpayInvoice(id: String): ApiResult<InvoiceDto> =
+        apiCall { client.post(ApiConfig.url("/invoices/$id/unpay")) }
+
+    /** Public invoice page with PDF download (no login needed). */
+    fun publicInvoiceUrl(token: String): String = ApiConfig.url("/public/invoices/$token")
 }
